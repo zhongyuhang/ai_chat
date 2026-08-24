@@ -85,6 +85,11 @@ describe('project routes', () => {
     expect(restored.statusCode).toBe(200);
     expect(restored.json().revision.reason).toMatch(/^restore:/);
 
+    const snapshot = await app.inject({ method: 'POST', url: `/api/projects/${project.id}/backups` });
+    expect(snapshot.statusCode).toBe(201);
+    const backups = await app.inject({ method: 'GET', url: `/api/projects/${project.id}/backups` });
+    expect(backups.json().backups).toContainEqual(expect.objectContaining({ id: snapshot.json().id }));
+
     const listed = await app.inject({ method: 'GET', url: '/api/projects' });
     expect(listed.json().projects).toHaveLength(1);
     const fetched = await app.inject({ method: 'GET', url: `/api/projects/${project.id}` });

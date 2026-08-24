@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm, stat } from 'node:fs/promises';
+import { mkdtemp, readFile, rename, rm, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -68,6 +68,24 @@ describe('project repository', () => {
 
     expect(await readFile(accepted, 'utf8')).toBe('原始正文');
     expect(await readFile(recoveryFile, 'utf8')).toBe('不应覆盖');
+  });
+
+  it('retries transient atomic rename failures before preserving the recovery file', async () => {
+    const root = await temporaryRoot();
+    const accepted = join(root, 'accepted.md');
+    await atomicWriteText(accepted, '原始正文');
+    let attempts = 0;
+
+    await atomicWriteText(accepted, '最终正文', {
+      async rename(from, to) {
+        attempts += 1;
+        if (attempts < 3) throw Object.assign(new Error('temporary Windows file lock'), { code: 'EPERM' });
+        await rename(from, to);
+      },
+    });
+
+    expect(attempts).toBe(3);
+    expect(await readFile(accepted, 'utf8')).toBe('最终正文');
   });
 
   it('round-trips a one-million-character accepted chapter without loss', async () => {

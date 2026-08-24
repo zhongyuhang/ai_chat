@@ -69,4 +69,14 @@ npm run studio:build
 npm --prefix studio run test:e2e
 ```
 
+完整发布前验证：
+
+```powershell
+npm run verify
+npm audit --omit=dev
+npm --prefix studio audit --omit=dev
+```
+
+本地数据、快照、手动恢复与迁移说明见 [`docs/operations/local-data-and-recovery.md`](docs/operations/local-data-and-recovery.md)。
+
 当前 Studio 已提供磁盘项目中心、原子 Markdown 章节修订、旧版迁移、完整设定与全书规划、严格上下文预算、可解释世界书命中、版本化提示词、DeepSeek 候选生成、角色剧场分支、固定记忆和场景卡转换。旧页面仍可用 `npm run legacy:start` 启动。

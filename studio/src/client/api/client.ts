@@ -27,6 +27,7 @@ export interface GenerationTaskInput {
   model?: string;
   requestedOutputTokens: number;
   contextWindow: number;
+  sourceRevisionId?: string;
 }
 export interface ContextPreview {
   inputTokens: number;
@@ -177,16 +178,16 @@ export const api = {
   },
   async getChapter(projectId: string, chapterId: string) {
     try {
-      return await request<{ content: string }>(`/api/projects/${projectId}/chapters/${chapterId}`);
+      return await request<{ content: string; revision?: ChapterRevision }>(`/api/projects/${projectId}/chapters/${chapterId}`);
     } catch (error) {
       if (error instanceof ApiError && error.code === 'NOT_FOUND') return { content: '' };
       throw error;
     }
   },
-  saveChapter(projectId: string, chapterId: string, content: string, reason = 'manual-save') {
+  saveChapter(projectId: string, chapterId: string, content: string, reason = 'manual-save', baseRevisionId?: string) {
     return request<{ ok: true; revision: ChapterRevision }>(`/api/projects/${projectId}/chapters/${chapterId}`, {
       method: 'PUT',
-      body: JSON.stringify({ content, reason }),
+      body: JSON.stringify({ content, reason, baseRevisionId }),
     });
   },
   async listChapterRevisions(projectId: string, chapterId: string) {
@@ -245,5 +246,8 @@ export const api = {
   },
   getProjectDashboard(projectId: string) {
     return request<{ volumeCount: number; plannedChapterCount: number; acceptedChapterCount: number; missingChapterCount: number; acceptedCharacters: number; characterCount: number; relationshipCount: number; worldBookCount: number; timelineEventCount: number; unresolvedForeshadowing: number; updatedAt: string }>(`/api/projects/${projectId}/dashboard`);
+  },
+  createProjectBackup(projectId: string) {
+    return request<{ id: string; createdAt: string }>(`/api/projects/${projectId}/backups`, { method: 'POST' });
   },
 };

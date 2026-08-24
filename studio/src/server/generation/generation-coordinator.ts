@@ -103,6 +103,12 @@ export function createGenerationCoordinator(options: {
     if (run.target.kind !== 'chapter') throw Object.assign(new Error('此候选稿目标不是章节。'), { code: 'CANDIDATE_TARGET_INVALID', statusCode: 422 });
     const candidate = run.candidates.find((item) => item.id === candidateId);
     if (!candidate) throw Object.assign(new Error('候选稿不存在。'), { code: 'CANDIDATE_NOT_FOUND', statusCode: 404 });
+    const savedRequest = await options.runStore.readRequest(runId) as { compiled?: { task?: { sourceRevisionId?: string } } };
+    const sourceRevisionId = savedRequest.compiled?.task?.sourceRevisionId;
+    if (sourceRevisionId) {
+      const currentRevisionId = (await options.repository.listChapterRevisions(run.projectId, run.target.id)).at(-1)?.id;
+      if (currentRevisionId !== sourceRevisionId) throw Object.assign(new Error('正式稿在生成期间已更新，请基于新版本重新生成。'), { code: 'SOURCE_REVISION_CHANGED', statusCode: 409, retryable: false });
+    }
     const revision = await options.repository.saveChapterRevision(run.projectId, run.target.id, candidate.content, { reason: `accepted-run:${runId}:${candidateId}` });
     await options.onChapterAccepted?.(run.projectId, run.target.id, revision.id);
     await options.runStore.acceptCandidate(runId, candidateId);

@@ -1,6 +1,7 @@
 interface DraftRecord {
   key: string;
   content: string;
+  baseRevisionId: string;
   updatedAt: string;
 }
 
@@ -33,11 +34,11 @@ export async function readDraft(projectId: string, chapterId: string): Promise<D
   });
 }
 
-export async function writeDraft(projectId: string, chapterId: string, content: string): Promise<void> {
+export async function writeDraft(projectId: string, chapterId: string, content: string, baseRevisionId: string): Promise<void> {
   const database = await openDatabase();
   return new Promise((resolve, reject) => {
     const transaction = database.transaction(STORE, 'readwrite');
-    transaction.objectStore(STORE).put({ key: draftKey(projectId, chapterId), content, updatedAt: new Date().toISOString() } satisfies DraftRecord);
+    transaction.objectStore(STORE).put({ key: draftKey(projectId, chapterId), content, baseRevisionId, updatedAt: new Date().toISOString() } satisfies DraftRecord);
     transaction.oncomplete = () => { database.close(); resolve(); };
     transaction.onerror = () => reject(transaction.error);
   });

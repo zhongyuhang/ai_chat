@@ -70,4 +70,15 @@ describe('generation coordinator', () => {
     await coordinator.acceptCandidate(run.id, completed!.candidates[0].id);
     expect(await repository.readChapter(project.id, 'chapter_001')).toBe('候选正文');
   });
+
+  it('rejects candidate acceptance when the accepted chapter changed during generation', async () => {
+    const { project, repository, coordinator } = await setup();
+    const sourceRevisionId = (await repository.listChapterRevisions(project.id, 'chapter_001')).at(-1)!.id;
+    const run = await coordinator.start({ kind: 'chapter-draft', projectId: project.id, target: { kind: 'chapter', id: 'chapter_001' }, instruction: '生成候选', candidateCount: 1, sourceRevisionId });
+    await coordinator.wait(run.id);
+    await repository.saveChapterRevision(project.id, 'chapter_001', '生成期间保存的新正式稿', { reason: 'concurrent-save' });
+    const completed = await coordinator.getRun(run.id);
+    await expect(coordinator.acceptCandidate(run.id, completed!.candidates[0].id)).rejects.toMatchObject({ code: 'SOURCE_REVISION_CHANGED' });
+    expect(await repository.readChapter(project.id, 'chapter_001')).toBe('生成期间保存的新正式稿');
+  });
 });

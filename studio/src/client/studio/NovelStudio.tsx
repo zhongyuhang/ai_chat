@@ -18,6 +18,7 @@ export function NovelStudio({ projectId, onBack }: { projectId: string; onBack: 
   const [chapterId, setChapterId] = useState(DEFAULT_CHAPTER);
   const [content, setContent] = useState('');
   const [dirty, setDirty] = useState(false);
+  const [baseRevisionId, setBaseRevisionId] = useState('chapter_new');
   const [notice, setNotice] = useState('');
   const [contextPreview, setContextPreview] = useState<ContextPreview>();
   const [runId, setRunId] = useState('');
@@ -38,13 +39,16 @@ export function NovelStudio({ projectId, onBack }: { projectId: string; onBack: 
     void readDraft(projectId, chapterId).then((draft) => {
       if (hydratedKey.current === key) return;
       const accepted = chapter.data?.content || '# 第一章\n\n';
-      if (draft && draft.content !== accepted) {
+      const currentRevisionId = chapter.data?.revision?.id ?? 'chapter_new';
+      setBaseRevisionId(currentRevisionId);
+      if (draft && draft.content !== accepted && draft.baseRevisionId === currentRevisionId) {
         setContent(draft.content);
         setDirty(true);
         setNotice('已恢复未保存草稿');
       } else {
         setContent(accepted);
         setDirty(false);
+        if (draft && draft.content !== accepted) setNotice('检测到基于旧正式稿的恢复草稿，未自动覆盖当前版本');
       }
       hydratedKey.current = key;
     });
@@ -52,15 +56,16 @@ export function NovelStudio({ projectId, onBack }: { projectId: string; onBack: 
 
   useEffect(() => {
     if (!dirty || hydratedKey.current !== `${projectId}:${chapterId}`) return;
-    const timer = window.setTimeout(() => void writeDraft(projectId, chapterId, content), 450);
+    const timer = window.setTimeout(() => void writeDraft(projectId, chapterId, content, baseRevisionId), 450);
     return () => window.clearTimeout(timer);
-  }, [chapterId, content, dirty, projectId]);
+  }, [baseRevisionId, chapterId, content, dirty, projectId]);
 
   const save = useMutation({
-    mutationFn: () => api.saveChapter(projectId, chapterId, content),
-    onSuccess: async () => {
+    mutationFn: () => api.saveChapter(projectId, chapterId, content, 'manual-save', baseRevisionId),
+    onSuccess: async (result) => {
       await clearDraft(projectId, chapterId);
       setDirty(false);
+      setBaseRevisionId(result.revision.id);
       setNotice('已保存为正式稿');
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['chapter', projectId, chapterId] }),
@@ -139,6 +144,7 @@ export function NovelStudio({ projectId, onBack }: { projectId: string; onBack: 
 
     <GenerationToolbar
       chapterId={chapterId}
+      sourceRevisionId={baseRevisionId === 'chapter_new' ? undefined : baseRevisionId}
       dirty={dirty}
       preview={contextPreview}
       pending={previewGeneration.isPending || startGeneration.isPending}

@@ -4,6 +4,7 @@ import { CreateProjectInputSchema, EntityIdSchema } from '../../shared/contracts
 import { LegacyMigrationApplySchema } from '../../shared/contracts/migration.js';
 import { applyLegacyMigration, previewLegacyMigration } from '../migration/legacy-migration.js';
 import type { ProjectRepository } from './project-repository.js';
+import type { createBackupManager } from './backup-manager.js';
 
 const ProjectParams = z.object({ id: EntityIdSchema });
 const ChapterParams = z.object({ id: EntityIdSchema, chapterId: EntityIdSchema });
@@ -12,13 +13,14 @@ const CanonParams = z.object({ id: EntityIdSchema, kind: z.enum(['characters', '
 const ChapterBody = z.object({
   content: z.string().max(20_000_000),
   reason: z.string().trim().min(1).max(500),
+  baseRevisionId: z.union([EntityIdSchema, z.literal('chapter_new')]).optional(),
 });
 
 function notFound(message: string) {
   throw Object.assign(new Error(message), { statusCode: 404, code: 'NOT_FOUND', retryable: false });
 }
 
-export async function registerProjectRoutes(app: FastifyInstance, repository: ProjectRepository, hooks: { onChapterAccepted?: (projectId: string, chapterId: string, revisionId: string) => Promise<unknown> } = {}): Promise<void> {
+export async function registerProjectRoutes(app: FastifyInstance, repository: ProjectRepository, hooks: { onChapterAccepted?: (projectId: string, chapterId: string, revisionId: string) => Promise<unknown>; backups?: ReturnType<typeof createBackupManager> } = {}): Promise<void> {
   app.get('/api/projects', async () => ({ projects: await repository.listProjects() }));
 
   app.post('/api/projects', async (request, reply) => {
@@ -51,7 +53,8 @@ export async function registerProjectRoutes(app: FastifyInstance, repository: Pr
     const { id, chapterId } = ChapterParams.parse(request.params);
     if (!await repository.getProject(id)) notFound('项目不存在。');
     try {
-      return { content: await repository.readChapter(id, chapterId) };
+      const [content, revisions] = await Promise.all([repository.readChapter(id, chapterId), repository.listChapterRevisions(id, chapterId)]);
+      return { content, revision: revisions.at(-1) };
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') return notFound('章节不存在。');
       throw error;
@@ -62,6 +65,10 @@ export async function registerProjectRoutes(app: FastifyInstance, repository: Pr
     const { id, chapterId } = ChapterParams.parse(request.params);
     const body = ChapterBody.parse(request.body);
     if (!await repository.getProject(id)) notFound('项目不存在。');
+    if (body.baseRevisionId) {
+      const currentRevisionId = (await repository.listChapterRevisions(id, chapterId)).at(-1)?.id ?? 'chapter_new';
+      if (currentRevisionId !== body.baseRevisionId) throw Object.assign(new Error('正式稿已在其他位置更新，请刷新后比较版本。'), { code: 'SOURCE_REVISION_CHANGED', statusCode: 409, retryable: false });
+    }
     const revision = await repository.saveChapterRevision(id, chapterId, body.content, { reason: body.reason });
     await hooks.onChapterAccepted?.(id, chapterId, revision.id);
     return { ok: true, revision };
@@ -90,6 +97,14 @@ export async function registerProjectRoutes(app: FastifyInstance, repository: Pr
     const result = await applyLegacyMigration(input, repository);
     return reply.status(201).send(result);
   });
+  if (hooks.backups) {
+    app.get('/api/projects/:id/backups', async (request) => ({ backups: await hooks.backups!.list(ProjectParams.parse(request.params).id) }));
+    app.post('/api/projects/:id/backups', async (request, reply) => {
+      const { id } = ProjectParams.parse(request.params);
+      if (!await repository.getProject(id)) notFound('项目不存在。');
+      return reply.status(201).send(await hooks.backups!.snapshot(id));
+    });
+  }
 }
 
 async function dependenciesSafeUpdate(repository: ProjectRepository, id: string, changes: { status: 'draft' | 'active' | 'archived' | 'completed' }) {

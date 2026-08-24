@@ -15,6 +15,7 @@ export function ProjectCenter({ onOpenCanon, onOpenStudio }: { onOpenCanon: (pro
   const [selectedId, setSelectedId] = useState<string>();
   const [creating, setCreating] = useState(false);
   const [exportProjectId, setExportProjectId] = useState<string>();
+  const [backupNotice, setBackupNotice] = useState('');
   useEffect(() => {
     if (!selectedId && projects.data?.length) setSelectedId(projects.data[0].id);
   }, [projects.data, selectedId]);
@@ -34,6 +35,10 @@ export function ProjectCenter({ onOpenCanon, onOpenStudio }: { onOpenCanon: (pro
       queryClient.setQueryData(['projects'], (items: typeof projects.data) => items?.map((item) => item.id === project.id ? project : item));
       await queryClient.invalidateQueries({ queryKey: ['projects'] });
     },
+  });
+  const backup = useMutation({
+    mutationFn: api.createProjectBackup,
+    onSuccess: (record) => setBackupNotice(`本地快照已创建：${record.id}`),
   });
 
   async function createProject(input: CreateProjectInput) {
@@ -71,10 +76,12 @@ export function ProjectCenter({ onOpenCanon, onOpenStudio }: { onOpenCanon: (pro
               <div><dt>内容分级</dt><dd>{selected.contentRating}</dd></div>
             </dl>
             <ProjectDashboard projectId={selected.id} />
+            {backupNotice && <p className="backup-notice" role="status">{backupNotice}</p>}
             <div className="detail-actions">
               <button className="primary-action" type="button" onClick={() => onOpenStudio(selected.id)}>进入小说工坊</button>
               <button className="quiet-button" type="button" onClick={() => onOpenCanon(selected.id)}>设定库</button>
               <button className="quiet-button" type="button" onClick={() => setExportProjectId(selected.id)}>导出作品</button>
+              <button className="quiet-button" type="button" disabled={backup.isPending} onClick={() => backup.mutate(selected.id)}>{backup.isPending ? '创建快照中…' : '创建本地快照'}</button>
               {selected.status !== 'archived' && <button className="quiet-button danger-button" type="button" onClick={() => window.confirm('归档后项目仍会保留，可在后续版本恢复。确认归档吗？') && archive.mutate(selected.id)} disabled={archive.isPending}>归档项目</button>}
             </div>
           </> : <div className="detail-placeholder">选择一个项目查看详情。</div>}

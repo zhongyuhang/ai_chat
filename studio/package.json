@@ -8,10 +8,13 @@
     "dev:server": "tsx watch src/server/index.ts",
     "dev:client": "vite",
     "build": "tsc -b && tsc -p tsconfig.server-build.json && vite build",
-    "test": "vitest run",
+    "test": "vitest run --exclude tests/server/scale-recovery.test.ts",
+    "test:unit": "vitest run tests/shared tests/server --exclude tests/server/scale-recovery.test.ts",
+    "test:integration": "vitest run tests/server/project-routes.test.ts tests/server/generation-routes.test.ts tests/server/quality-routes.test.ts tests/server/export.test.ts",
     "test:e2e": "playwright test",
     "test:scale": "vitest run tests/server/scale-recovery.test.ts",
-    "check": "tsc -b --pretty false"
+    "check": "tsc -b --pretty false",
+    "verify": "npm run check && npm run test:unit && npm run test:integration && npm run test:e2e && npm run test:scale && npm run build"
   },
   "dependencies": {
     "@codemirror/lang-markdown": "^6.5.2",

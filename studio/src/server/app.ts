@@ -23,6 +23,7 @@ import { registerQualityRoutes } from './quality/quality-routes.js';
 import { registerDashboardRoutes } from './dashboard/dashboard-routes.js';
 import { registerExportRoutes } from './export/export-routes.js';
 import { createAcceptedStateCapture } from './canon/accepted-state-capture.js';
+import { createBackupManager } from './projects/backup-manager.js';
 
 export interface AppOptions {
   logger?: boolean;
@@ -62,6 +63,7 @@ export async function buildApp(options: AppOptions = {}): Promise<FastifyInstanc
   const coordinator = createGenerationCoordinator({ repository, runStore, provider, promptRegistry, onChapterAccepted: captureAcceptedState });
   const materials = createMaterialConverter({ theatre, canon });
   const quality = createQualityService({ repository, canon });
+  const backups = createBackupManager(dataRoot);
 
   app.setErrorHandler((error, request, reply) => {
     const validation = error instanceof ZodError;
@@ -82,7 +84,7 @@ export async function buildApp(options: AppOptions = {}): Promise<FastifyInstanc
     });
   });
   app.get('/api/health', async () => ({ ok: true as const, version: 1 as const }));
-  await registerProjectRoutes(app, repository, { onChapterAccepted: captureAcceptedState });
+  await registerProjectRoutes(app, repository, { onChapterAccepted: captureAcceptedState, backups });
   await registerGenerationRoutes(app, { repository, runStore, provider, promptRegistry, canon, outlines, theatre, coordinator });
   await registerCanonRoutes(app, { canon, proposals, chapterStates, outlines });
   await registerTheatreRoutes(app, theatre, { coordinator, materials });

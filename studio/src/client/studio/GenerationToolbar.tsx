@@ -8,8 +8,9 @@ const actions: Array<{ kind: WritingTaskKind; label: string; instruction: string
   { kind: 'polish-selection', label: '语言润色', instruction: '在不改变事实、情节与人物动机的前提下，提升正文的准确性和文学表达。' },
 ];
 
-export function GenerationToolbar({ chapterId, dirty, preview, pending, onPreview, onStart }: {
+export function GenerationToolbar({ chapterId, sourceRevisionId, dirty, preview, pending, onPreview, onStart }: {
   chapterId: string;
+  sourceRevisionId?: string;
   dirty: boolean;
   preview?: ContextPreview;
   pending: boolean;
@@ -27,6 +28,7 @@ export function GenerationToolbar({ chapterId, dirty, preview, pending, onPrevie
     candidateCount,
     requestedOutputTokens: 8192,
     contextWindow: 128_000,
+    sourceRevisionId,
   };
   function choose(next: WritingTaskKind) {
     setKind(next);
