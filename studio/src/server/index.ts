@@ -12,7 +12,7 @@ const e2eProvider: TextProvider | undefined = process.env.STUDIO_E2E_FAKE_PROVID
     yield { type: 'finish', reason: 'stop' };
   },
 } : undefined;
-const app = await buildApp({ logger: true, dataRoot: process.env.STUDIO_DATA_ROOT, provider: e2eProvider });
+const app = await buildApp({ logger: true, dataRoot: process.env.STUDIO_DATA_ROOT, provider: e2eProvider, serveClient: process.env.STUDIO_SERVE_CLIENT === '1' });
 
 try {
   await app.listen({ host, port });

@@ -14,7 +14,7 @@ test('persists retry branches, pinned memory and converts only the selected bran
   } });
 
   await page.goto(`/?workspace=theatre&project=${project.id}`);
-  await page.getByRole('button', { name: '新建剧场会话' }).click();
+  await page.getByRole('button', { name: '新建剧场会话' }).first().click();
   await page.getByLabel('会话名称').fill('雨夜试演');
   await page.getByLabel('参与角色 林默').check();
   await page.getByLabel('用户身份').fill('负责盘问的守城人');

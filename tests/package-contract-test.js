@@ -8,5 +8,8 @@ assert.ok(pkg.scripts['test:security'].includes('chat-page-security.js'));
 assert.ok(pkg.scripts['test:security'].includes('chat-page-data-integrity.js'));
 assert.ok(pkg.scripts.test.includes('npm run test:security'));
 assert.ok(pkg.scripts.check.includes('src/legacy/deepseek-client.js'));
+assert.strictEqual(pkg.scripts.start, 'node scripts/start-studio.js');
+assert.strictEqual(pkg.scripts['legacy:start'], 'node server.js');
+assert.strictEqual(pkg.scripts.build, 'npm run studio:build');
 
 console.log('package-contract-test PASS');

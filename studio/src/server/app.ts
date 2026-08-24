@@ -17,6 +17,7 @@ import { createTheatreRepository } from './theatre/theatre-repository.js';
 import { registerTheatreRoutes } from './theatre/theatre-routes.js';
 import { createGenerationCoordinator } from './generation/generation-coordinator.js';
 import { createMaterialConverter } from './material/material-converter.js';
+import fastifyStatic from '@fastify/static';
 
 export interface AppOptions {
   logger?: boolean;
@@ -25,10 +26,19 @@ export interface AppOptions {
   runStore?: RunStore;
   provider?: TextProvider;
   promptRegistry?: PromptRegistry;
+  serveClient?: boolean;
+  clientRoot?: string;
 }
 
 export async function buildApp(options: AppOptions = {}): Promise<FastifyInstance> {
   const app = Fastify({ logger: options.logger ?? false });
+  app.addHook('onSend', async (_request, reply) => {
+    reply.header('content-security-policy', "default-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'");
+    reply.header('x-content-type-options', 'nosniff');
+    reply.header('x-frame-options', 'DENY');
+    reply.header('referrer-policy', 'no-referrer');
+    reply.header('cross-origin-opener-policy', 'same-origin');
+  });
   const dataRoot = options.dataRoot ?? resolve(process.cwd(), 'studio-data');
   const repository = options.repository ?? createProjectRepository({ dataRoot });
   const runStore = options.runStore ?? createRunStore({ dataRoot });
@@ -69,6 +79,16 @@ export async function buildApp(options: AppOptions = {}): Promise<FastifyInstanc
   await registerGenerationRoutes(app, { repository, runStore, provider, promptRegistry, canon, outlines, theatre, coordinator });
   await registerCanonRoutes(app, { canon, proposals, chapterStates, outlines });
   await registerTheatreRoutes(app, theatre, { coordinator, materials });
+  if (options.serveClient) {
+    await app.register(fastifyStatic, {
+      root: options.clientRoot ?? resolve(process.cwd(), 'dist/client'),
+      prefix: '/',
+    });
+    app.setNotFoundHandler((request, reply) => {
+      if (request.url.startsWith('/api/')) return reply.status(404).send({ error: { code: 'NOT_FOUND', message: 'API 路由不存在。', requestId: request.id, retryable: false } });
+      return reply.type('text/html; charset=utf-8').sendFile('index.html');
+    });
+  }
   await app.ready();
   return app;
 }

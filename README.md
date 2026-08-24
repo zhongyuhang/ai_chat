@@ -1,6 +1,6 @@
 # 本地 AI 小说工作台
 
-这是一个只在本机运行、当前只接入 DeepSeek 文本模型的 AI 长篇写作项目。现阶段已经完成 P0 安全与数据保护基线；后续按仓库中的 P1～P3 计划演进为“小说工作室 + 角色剧场”双工作区，并以百万字小说的连续性为验收目标。
+这是一个只在本机运行、当前只接入 DeepSeek 文本模型的 AI 长篇写作项目。新版默认界面提供“小说工坊 + 角色剧场”双工作区，并以百万字小说的连续性为验收目标。
 
 ## 本地启动
 
@@ -17,9 +17,10 @@ Copy-Item .env.example .env
 DEEPSEEK_API_KEY=你的密钥
 ```
 
-然后启动：
+首次运行先构建，再启动：
 
 ```powershell
+npm run build
 npm start
 ```
 
@@ -34,7 +35,7 @@ npm start
 
 ## 数据与备份
 
-会话正文保存在浏览器 IndexedDB，设置和会话索引保存在 localStorage。持久化与上下文摘要不会再静默删除或截断已接受的正文。清理浏览器站点数据仍会删除本地记录，因此重要作品应定期使用页面的导出功能保存 JSON 副本，并把副本放到独立备份位置。
+新版项目、Markdown 正文、不可变修订、设定库、剧场分支和生成检查点保存在仓库下的 `studio-data` 目录；浏览器 IndexedDB 只承担未保存草稿的崩溃恢复。正式稿不会因摘要或上下文预算而被删除或截断。
 
 ## 质量门禁
 
@@ -49,9 +50,9 @@ npm audit --omit=dev
 
 设计与实施计划位于 `docs/superpowers/specs` 和 `docs/superpowers/plans`。
 
-## 模块化 Studio（P1）
+## 开发新版 Studio
 
-新工作台与旧版安全页面并行存在。开发时运行：
+开发时运行：
 
 ```powershell
 npm run studio:dev
@@ -68,4 +69,4 @@ npm run studio:build
 npm --prefix studio run test:e2e
 ```
 
-当前 Studio 已提供磁盘项目中心、原子 Markdown 章节修订、项目快照、旧版迁移预览/应用、严格上下文预算、可解释世界书命中、版本化提示词、DeepSeek 流规范化和可恢复生成任务。小说工坊与角色剧场界面将在 P2 接通。
+当前 Studio 已提供磁盘项目中心、原子 Markdown 章节修订、旧版迁移、完整设定与全书规划、严格上下文预算、可解释世界书命中、版本化提示词、DeepSeek 候选生成、角色剧场分支、固定记忆和场景卡转换。旧页面仍可用 `npm run legacy:start` 启动。
