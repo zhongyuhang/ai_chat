@@ -2,6 +2,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const { resolveStaticAsset, securityHeaders, isAllowedOrigin, isJsonRequest } = require('./security');
+const { createDeepSeekClient } = require('./deepseek-client');
 
 const SUMMARIZE_INSTRUCTION = `你是小说创作辅助工具中的上下文压缩模块。
 请阅读下面的对话记录，整理成一份简洁、结构化、可继续创作的中文摘要。
@@ -19,6 +20,7 @@ const SUMMARIZE_INSTRUCTION = `你是小说创作辅助工具中的上下文压�
 
 function createApp(config, dependencies = {}) {
   const fetchImpl = dependencies.fetchImpl || fetch;
+  const deepSeekClient = dependencies.deepSeekClient || createDeepSeekClient({ config, fetchImpl });
   return http.createServer(async (req, res) => {
     try {
       const url = new URL(req.url, `http://${req.headers.host || `${config.host}:${config.port}`}`);
@@ -33,13 +35,19 @@ function createApp(config, dependencies = {}) {
         }
       }
 
-      if (req.method === 'POST' && pathname === '/api/chat') return proxyChat(req, res, config, fetchImpl);
-      if (req.method === 'POST' && pathname === '/api/summarize') return proxySummarize(req, res, config, fetchImpl);
+      if (req.method === 'POST' && pathname === '/api/chat') {
+        await withClientCancellation(req, res, (signal) => proxyChat(req, res, config, deepSeekClient, signal));
+        return;
+      }
+      if (req.method === 'POST' && pathname === '/api/summarize') {
+        await withClientCancellation(req, res, (signal) => proxySummarize(req, res, config, deepSeekClient, signal));
+        return;
+      }
       if (req.method === 'GET' && pathname === '/api/status') return sendJson(res, 200, getStatus(config));
       if (req.method === 'GET') return serveStatic(pathname, res, config);
       return sendJson(res, 405, { error: { code: 'METHOD_NOT_ALLOWED', message: 'Method not allowed', retryable: false } });
     } catch (error) {
-      if (res.headersSent || res.writableEnded) return res.destroy(error);
+      if (res.destroyed || res.headersSent || res.writableEnded) return res.destroy(error);
       return sendJson(res, error.statusCode || 500, {
         error: { code: error.code || 'INTERNAL_ERROR', message: error.message, retryable: Boolean(error.retryable) },
       });
@@ -47,15 +55,14 @@ function createApp(config, dependencies = {}) {
   });
 }
 
-async function proxyChat(req, res, config, fetchImpl) {
+async function proxyChat(req, res, config, deepSeekClient, clientSignal) {
   if (!config.apiKey) return sendJson(res, 500, { error: { code: 'API_KEY_MISSING', message: '缺少 DEEPSEEK_API_KEY，请在 .env 中配置。', retryable: false } });
   const body = await readBody(req);
   const payload = injectDefaultPrompt(body, config);
-  const upstream = await fetchImpl(config.deepseekUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${config.apiKey}` },
-    body: JSON.stringify(payload),
-  });
+  const upstream = await deepSeekClient.request(payload, clientSignal);
+  if (!upstream.ok) {
+    throw httpError(upstream.status, 'UPSTREAM_HTTP', `DeepSeek 请求失败：HTTP ${upstream.status}`, upstream.status >= 500 || upstream.status === 429);
+  }
   writeHead(res, upstream.status, {
     'Content-Type': upstream.headers.get('content-type') || 'text/event-stream; charset=utf-8',
     'Cache-Control': 'no-cache',
@@ -63,12 +70,18 @@ async function proxyChat(req, res, config, fetchImpl) {
   });
   if (!upstream.body) return res.end();
   const reader = upstream.body.getReader();
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    res.write(Buffer.from(value));
+  const cancelReader = () => reader.cancel().catch(() => {});
+  clientSignal?.addEventListener('abort', cancelReader, { once: true });
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done || clientSignal?.aborted) break;
+      res.write(Buffer.from(value));
+    }
+  } finally {
+    clientSignal?.removeEventListener('abort', cancelReader);
   }
-  res.end();
+  if (!res.destroyed) res.end();
 }
 
 function injectDefaultPrompt(body, config) {
@@ -102,7 +115,7 @@ function buildSummarizePayload(messages, existingSummary, model) {
   };
 }
 
-async function proxySummarize(req, res, config, fetchImpl) {
+async function proxySummarize(req, res, config, deepSeekClient, clientSignal) {
   if (!config.apiKey) return sendJson(res, 500, { error: { code: 'API_KEY_MISSING', message: '缺少 DEEPSEEK_API_KEY，请在 .env 中配置。', retryable: false } });
   const body = await readBody(req);
   let json;
@@ -115,16 +128,7 @@ async function proxySummarize(req, res, config, fetchImpl) {
     return sendJson(res, 400, { error: { code: 'MESSAGES_REQUIRED', message: '缺少 messages 数组。', retryable: false } });
   }
   const payload = buildSummarizePayload(json.messages, json.summary, json.model || 'deepseek-v4-flash');
-  let upstream;
-  try {
-    upstream = await fetchImpl(config.deepseekUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${config.apiKey}` },
-      body: JSON.stringify(payload),
-    });
-  } catch (error) {
-    return sendJson(res, 502, { error: { code: 'UPSTREAM_NETWORK', message: `上游请求失败：${error.message}`, retryable: true } });
-  }
+  const upstream = await deepSeekClient.request(payload, clientSignal);
   if (!upstream.ok) {
     return sendJson(res, upstream.status, { error: { code: 'UPSTREAM_HTTP', message: `DeepSeek 摘要请求失败：HTTP ${upstream.status}`, retryable: upstream.status >= 500 } });
   }
@@ -134,6 +138,22 @@ async function proxySummarize(req, res, config, fetchImpl) {
     return sendJson(res, 502, { error: { code: 'UPSTREAM_INVALID_RESPONSE', message: 'DeepSeek 未返回可用的摘要内容。', retryable: true } });
   }
   return sendJson(res, 200, { summary: summary.trim() });
+}
+
+async function withClientCancellation(req, res, handler) {
+  const controller = new AbortController();
+  const cancel = () => controller.abort();
+  const cancelOnPrematureClose = () => {
+    if (!res.writableEnded) cancel();
+  };
+  req.once('aborted', cancel);
+  res.once('close', cancelOnPrematureClose);
+  try {
+    return await handler(controller.signal);
+  } finally {
+    req.removeListener('aborted', cancel);
+    res.removeListener('close', cancelOnPrematureClose);
+  }
 }
 
 function readDefaultPrompt(config) {
