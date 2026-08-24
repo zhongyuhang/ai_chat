@@ -5,6 +5,9 @@ import { markdown } from '@codemirror/lang-markdown';
 import { EditorView } from '@codemirror/view';
 import { api } from '../api/client';
 import { clearDraft, readDraft, writeDraft } from './draft-journal';
+import { GenerationToolbar } from './GenerationToolbar';
+import { CandidateComparison } from './CandidateComparison';
+import type { ContextPreview, GenerationTaskInput } from '../api/client';
 
 const DEFAULT_CHAPTER = 'chapter_001';
 
@@ -14,9 +17,17 @@ export function NovelStudio({ projectId, onBack }: { projectId: string; onBack: 
   const [content, setContent] = useState('');
   const [dirty, setDirty] = useState(false);
   const [notice, setNotice] = useState('');
+  const [contextPreview, setContextPreview] = useState<ContextPreview>();
+  const [runId, setRunId] = useState('');
   const hydratedKey = useRef('');
   const chapter = useQuery({ queryKey: ['chapter', projectId, chapterId], queryFn: () => api.getChapter(projectId, chapterId), retry: false });
   const revisions = useQuery({ queryKey: ['chapter-revisions', projectId, chapterId], queryFn: () => api.listChapterRevisions(projectId, chapterId) });
+  const run = useQuery({
+    queryKey: ['generation-run', runId],
+    queryFn: () => api.getGenerationRun(runId),
+    enabled: Boolean(runId),
+    refetchInterval: (query) => query.state.data && ['completed', 'failed', 'interrupted', 'cancelled'].includes(query.state.data.status) ? false : 400,
+  });
 
   useEffect(() => {
     if (!chapter.data || hydratedKey.current === `${projectId}:${chapterId}`) return;
@@ -66,6 +77,32 @@ export function NovelStudio({ projectId, onBack }: { projectId: string; onBack: 
       setNotice('已恢复历史版本，并生成新的正式修订');
     },
   });
+  const previewGeneration = useMutation({
+    mutationFn: (task: GenerationTaskInput) => api.previewGeneration(projectId, task),
+    onSuccess: setContextPreview,
+  });
+  const startGeneration = useMutation({
+    mutationFn: (task: GenerationTaskInput) => api.startGeneration(projectId, task),
+    onSuccess: (created) => { setRunId(created.id); setNotice('AI 生成任务已启动；候选稿不会自动覆盖正式稿。'); },
+  });
+  const cancelGeneration = useMutation({
+    mutationFn: () => api.cancelGeneration(runId),
+    onSuccess: () => void run.refetch(),
+  });
+  const acceptCandidate = useMutation({
+    mutationFn: (candidateId: string) => api.acceptGenerationCandidate(runId, candidateId),
+    onSuccess: async () => {
+      await clearDraft(projectId, chapterId);
+      hydratedKey.current = '';
+      setDirty(false);
+      setNotice('已采用候选稿并保存为正式稿');
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['chapter', projectId, chapterId] }),
+        queryClient.invalidateQueries({ queryKey: ['chapter-revisions', projectId, chapterId] }),
+        queryClient.invalidateQueries({ queryKey: ['generation-run', runId] }),
+      ]);
+    },
+  });
   const characterCount = useMemo(() => [...content].filter((character) => !/\s/u.test(character)).length, [content]);
 
   function openChapter(next: string) {
@@ -97,6 +134,16 @@ export function NovelStudio({ projectId, onBack }: { projectId: string; onBack: 
 
     {(notice || save.isError || chapter.isError) && <p className={save.isError || chapter.isError ? 'form-error studio-notice' : 'studio-notice'} role="status">{save.error?.message || chapter.error?.message || notice}</p>}
 
+    <GenerationToolbar
+      chapterId={chapterId}
+      dirty={dirty}
+      preview={contextPreview}
+      pending={previewGeneration.isPending || startGeneration.isPending}
+      onPreview={(task) => previewGeneration.mutate(task)}
+      onStart={(task) => startGeneration.mutate(task)}
+    />
+    {(previewGeneration.isError || startGeneration.isError) && <p className="form-error" role="alert">{previewGeneration.error?.message || startGeneration.error?.message}</p>}
+
     <div className="studio-grid">
       <section className="editor-panel" aria-label="章节编辑区">
         <div className="panel-heading"><div><p className="section-kicker">ACCEPTED MANUSCRIPT</p><h3>{chapterId}</h3></div><small>Markdown · UTF-8</small></div>
@@ -113,7 +160,7 @@ export function NovelStudio({ projectId, onBack }: { projectId: string; onBack: 
       </section>
 
       <aside className="studio-rail">
-        <section className="rail-card"><p className="section-kicker">AI CANDIDATE</p><h3>候选区</h3><p>AI 生成内容将在这里预览，不会直接覆盖正式稿。</p><button className="quiet-button" type="button" disabled>生成续写（下一步接入）</button></section>
+        {run.data ? <CandidateComparison run={run.data} accepting={acceptCandidate.isPending} onAccept={(candidateId) => acceptCandidate.mutate(candidateId)} onCancel={() => cancelGeneration.mutate()} /> : <section className="rail-card"><p className="section-kicker">AI CANDIDATE</p><h3>候选区</h3><p>使用上方写作动作启动 AI。候选稿只在这里预览，明确采用后才会形成正式修订。</p></section>}
         <section className="rail-card revision-card"><div className="panel-heading"><div><p className="section-kicker">REVISION HISTORY</p><h3>修订历史</h3></div><span>{revisions.data?.length ?? 0}</span></div>
           {revisions.isLoading && <p className="loading-state">读取修订…</p>}
           <ol>{[...(revisions.data ?? [])].reverse().map((revision) => <li key={revision.id}><div><strong>{revision.reason}</strong><time>{new Date(revision.createdAt).toLocaleString('zh-CN')}</time><small>{revision.characterCount.toLocaleString('zh-CN')} 字符</small></div><button className="quiet-button" type="button" disabled={restore.isPending} onClick={() => window.confirm('恢复会生成一个新修订，不会删除当前历史。继续吗？') && restore.mutate(revision.id)}>恢复</button></li>)}</ol>

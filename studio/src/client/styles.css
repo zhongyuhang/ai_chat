@@ -135,6 +135,31 @@ button:focus-visible { outline: 3px solid #f59e0b; outline-offset: 3px; }
 .revision-card li strong { overflow: hidden; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
 .revision-card li time, .revision-card li small, .empty-note { color: var(--muted); font-size: 11px; }
 .revision-card li .quiet-button { min-height: 36px; padding: 0 10px; }
+.generation-toolbar { margin: 12px 0 14px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.generation-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.generation-actions .selected { color: white; background: var(--accent-strong); border-color: var(--accent-strong); }
+.generation-config { display: grid; grid-template-columns: minmax(0, 1fr) 140px; gap: 12px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+.generation-config label { display: grid; gap: 6px; color: #44403c; font-size: 12px; font-weight: 700; }
+.generation-config textarea, .generation-config select { min-height: 44px; padding: 10px; border: 1px solid #cfc2b3; border-radius: 8px; background: white; }
+.generation-config textarea { min-height: 86px; resize: vertical; }
+.generation-config .inline-actions, .generation-config .form-error, .context-preview { grid-column: 1 / -1; }
+.context-preview { padding: 14px; border: 1px solid #e0b87f; border-radius: 10px; background: #fffaf0; }
+.context-preview h4, .candidate-comparison h4 { margin: 5px 0 0; }
+.context-preview > p { color: var(--muted); font-size: 12px; }
+.prompt-tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.prompt-tags code { padding: 4px 7px; border-radius: 6px; color: #7c2d12; background: #ffedd5; font-size: 11px; }
+.context-preview ol { display: grid; gap: 6px; max-height: 250px; margin: 12px 0 0; padding: 0; overflow: auto; list-style: none; }
+.context-preview li { display: flex; justify-content: space-between; gap: 12px; padding: 9px; border: 1px solid var(--line); border-radius: 7px; background: white; }
+.context-preview li div { display: grid; gap: 3px; min-width: 0; }
+.context-preview li small { color: var(--muted); }
+.manifest-status { align-self: center; color: #3f6212; font-size: 11px; white-space: nowrap; }
+.manifest-status.omitted-budget, .manifest-status.missing { color: #9a3412; }
+.candidate-comparison { padding: 18px; border: 1px solid #e0b87f; border-radius: 14px; background: #fffaf0; box-shadow: 0 12px 36px rgba(93, 69, 43, .05); }
+.candidate-tabs { display: flex; gap: 6px; margin-top: 14px; overflow-x: auto; }
+.candidate-tabs button { min-height: 40px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px 8px 0 0; background: white; cursor: pointer; }
+.candidate-tabs button[aria-selected="true"] { color: white; background: var(--accent-strong); border-color: var(--accent-strong); }
+.candidate-prose { padding: 12px; border: 1px solid var(--line); border-radius: 0 8px 8px; background: white; }
+.candidate-prose pre { max-height: 400px; overflow: auto; font: 14px/1.75 "Songti SC", SimSun, serif; white-space: pre-wrap; word-break: break-word; }
 
 @media (max-width: 760px) {
   .workspace { grid-template-columns: 1fr; }
@@ -152,6 +177,7 @@ button:focus-visible { outline: 3px solid #f59e0b; outline-offset: 3px; }
   .studio-commandbar input { width: 100%; }
   .studio-commandbar .save-state { margin-left: 0; }
   .studio-grid { grid-template-columns: 1fr; }
+  .generation-config { grid-template-columns: 1fr; }
   .chapter-editor .cm-content { padding: 20px 16px; }
 }
 

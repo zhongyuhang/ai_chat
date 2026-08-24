@@ -7,7 +7,7 @@ import {
 import { estimateTokens } from './token-estimator.js';
 import { retrieveWorldBook, type ActiveScope } from './worldbook-retriever.js';
 
-interface ContextMessage {
+export interface ContextMessage {
   role: 'system' | 'user';
   content: string;
 }

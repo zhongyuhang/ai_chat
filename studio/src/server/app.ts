@@ -62,7 +62,7 @@ export async function buildApp(options: AppOptions = {}): Promise<FastifyInstanc
   });
   app.get('/api/health', async () => ({ ok: true as const, version: 1 as const }));
   await registerProjectRoutes(app, repository);
-  await registerGenerationRoutes(app, { repository, runStore, provider, promptRegistry });
+  await registerGenerationRoutes(app, { repository, runStore, provider, promptRegistry, canon, outlines });
   await registerCanonRoutes(app, { canon, proposals, chapterStates, outlines });
   await registerTheatreRoutes(app, theatre);
   await app.ready();

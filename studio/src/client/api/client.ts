@@ -18,6 +18,31 @@ export interface ChapterRevision {
   createdAt: string;
 }
 
+export type WritingTaskKind = 'chapter-draft' | 'continue' | 'rewrite-selection' | 'expand-selection' | 'condense-selection' | 'polish-selection';
+export interface GenerationTaskInput {
+  kind: WritingTaskKind;
+  target: { kind: 'chapter'; id: string };
+  instruction: string;
+  candidateCount: number;
+  model?: string;
+  requestedOutputTokens: number;
+  contextWindow: number;
+}
+export interface ContextPreview {
+  inputTokens: number;
+  reservedOutputTokens: number;
+  candidateCount: number;
+  promptManifest: Array<{ id: string; version: number }>;
+  manifest: Array<{ sourceId: string; kind: string; reason: string; priority: number; estimatedTokens: number; status: 'included' | 'omitted-budget' | 'missing' }>;
+}
+export interface GenerationRunDetail {
+  id: string;
+  status: 'queued' | 'generating' | 'completed' | 'failed' | 'interrupted' | 'cancelled';
+  error?: { code: string; message: string; retryable: boolean };
+  contextManifest: ContextPreview['manifest'];
+  candidates: Array<{ id: string; content: string; accepted: boolean }>;
+}
+
 interface ApiFailure {
   error?: { code?: string; message?: string; fields?: Record<string, string> };
 }
@@ -96,5 +121,20 @@ export const api = {
   },
   restoreChapterRevision(projectId: string, chapterId: string, revisionId: string) {
     return request<{ ok: true; revision: ChapterRevision }>(`/api/projects/${projectId}/chapters/${chapterId}/revisions/${revisionId}/restore`, { method: 'POST' });
+  },
+  previewGeneration(projectId: string, task: GenerationTaskInput) {
+    return request<ContextPreview>(`/api/projects/${projectId}/generation/preview`, { method: 'POST', body: JSON.stringify(task) });
+  },
+  startGeneration(projectId: string, task: GenerationTaskInput) {
+    return request<{ id: string }>(`/api/projects/${projectId}/generation/tasks`, { method: 'POST', body: JSON.stringify(task) });
+  },
+  getGenerationRun(runId: string) {
+    return request<GenerationRunDetail>(`/api/runs/${runId}/detail`);
+  },
+  cancelGeneration(runId: string) {
+    return request<GenerationRunDetail>(`/api/runs/${runId}/cancel`, { method: 'POST' });
+  },
+  acceptGenerationCandidate(runId: string, candidateId: string) {
+    return request(`/api/runs/${runId}/candidates/${candidateId}/accept`, { method: 'POST' });
   },
 };

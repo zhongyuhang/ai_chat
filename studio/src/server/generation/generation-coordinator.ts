@@ -4,6 +4,8 @@ import type { PromptRegistry } from '../prompts/prompt-registry.js';
 import type { RunStore } from './run-store.js';
 import { compileWritingTask } from './task-compiler.js';
 import type { WritingTask } from '../../shared/contracts/tasks.js';
+import type { ContextManifestEntry } from '../../shared/contracts/context.js';
+import type { ProviderMessage } from '../providers/provider.js';
 
 export function createGenerationCoordinator(options: {
   repository: ProjectRepository;
@@ -45,8 +47,8 @@ export function createGenerationCoordinator(options: {
     }
   }
 
-  async function start(input: WritingTask) {
-    const compiled = compileWritingTask(input, options.promptRegistry);
+  async function start(input: WritingTask, context?: { messages: ProviderMessage[]; manifest: ContextManifestEntry[] }) {
+    const compiled = compileWritingTask(input, options.promptRegistry, context?.messages);
     if (!await options.repository.getProject(compiled.task.projectId)) {
       throw Object.assign(new Error('项目不存在。'), { code: 'PROJECT_NOT_FOUND', statusCode: 404 });
     }
@@ -57,7 +59,7 @@ export function createGenerationCoordinator(options: {
       provider: 'deepseek',
       model: compiled.task.model,
       promptManifest: compiled.promptManifest,
-      contextManifest: [],
+      contextManifest: context?.manifest ?? [],
     });
     await options.runStore.saveRequest(run.id, { compiled });
     const work = execute(run.id, compiled);

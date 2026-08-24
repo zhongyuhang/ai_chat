@@ -5,6 +5,12 @@ import type { TextProvider, ProviderRequest } from '../providers/provider.js';
 import type { ProjectRepository } from '../projects/project-repository.js';
 import { PromptRegistry } from '../prompts/prompt-registry.js';
 import type { RunStore } from './run-store.js';
+import { WritingTaskSchema } from '../../shared/contracts/tasks.js';
+import type { CanonService } from '../canon/canon-service.js';
+import type { OutlineService } from '../outlines/outline-service.js';
+import { assembleProjectContext } from '../context/project-context-service.js';
+import { createGenerationCoordinator } from './generation-coordinator.js';
+import { compileWritingTask } from './task-compiler.js';
 
 const CreateRunBody = z.object({
   task: z.enum(['story-plan', 'volume-plan', 'chapter-plan', 'scene-plan', 'chapter-draft', 'continue', 'rewrite-selection', 'expand-selection', 'condense-selection', 'polish-selection', 'review', 'theatre-reply']),
@@ -26,6 +32,10 @@ const CreateRunBody = z.object({
 });
 
 const RunParams = z.object({ runId: EntityIdSchema });
+const CandidateParams = RunParams.extend({ candidateId: EntityIdSchema });
+const WritingTaskBody = WritingTaskSchema.omit({ projectId: true }).extend({
+  contextWindow: z.number().int().min(4_000).max(200_000).default(128_000),
+});
 
 function notFound(message: string) {
   throw Object.assign(new Error(message), { statusCode: 404, code: 'NOT_FOUND', retryable: false });
@@ -36,7 +46,55 @@ export async function registerGenerationRoutes(app: FastifyInstance, dependencie
   runStore: RunStore;
   provider: TextProvider;
   promptRegistry: PromptRegistry;
+  canon: CanonService;
+  outlines: OutlineService;
 }): Promise<void> {
+  const coordinator = createGenerationCoordinator(dependencies);
+
+  async function prepare(projectId: string, body: unknown) {
+    if (!await dependencies.repository.getProject(projectId)) notFound('项目不存在。');
+    const parsed = WritingTaskBody.parse(body);
+    const task = WritingTaskSchema.parse({ ...parsed, projectId });
+    const context = await assembleProjectContext({
+      repository: dependencies.repository,
+      canon: dependencies.canon,
+      outlines: dependencies.outlines,
+      task,
+      contextWindow: parsed.contextWindow,
+    });
+    return { task, context };
+  }
+
+  app.post('/api/projects/:id/generation/preview', async (request) => {
+    const projectId = z.object({ id: EntityIdSchema }).parse(request.params).id;
+    const { task, context } = await prepare(projectId, request.body);
+    const compiled = compileWritingTask(task, dependencies.promptRegistry, context.messages);
+    return { ...context, promptManifest: compiled.promptManifest, target: task.target, candidateCount: task.candidateCount };
+  });
+
+  app.post('/api/projects/:id/generation/tasks', async (request, reply) => {
+    const projectId = z.object({ id: EntityIdSchema }).parse(request.params).id;
+    const { task, context } = await prepare(projectId, request.body);
+    return reply.status(201).send(await coordinator.start(task, context));
+  });
+
+  app.get('/api/runs/:runId/detail', async (request) => {
+    const { runId } = RunParams.parse(request.params);
+    return await coordinator.getRun(runId) ?? notFound('生成任务不存在。');
+  });
+
+  app.post('/api/runs/:runId/cancel', async (request) => {
+    const { runId } = RunParams.parse(request.params);
+    return await coordinator.cancel(runId) ?? notFound('生成任务不存在。');
+  });
+
+  app.post('/api/runs/:runId/resume', async (request) => coordinator.resume(RunParams.parse(request.params).runId));
+
+  app.post('/api/runs/:runId/candidates/:candidateId/accept', async (request) => {
+    const { runId, candidateId } = CandidateParams.parse(request.params);
+    return coordinator.acceptCandidate(runId, candidateId);
+  });
+
   app.post('/api/projects/:id/runs', async (request, reply) => {
     const projectId = z.object({ id: EntityIdSchema }).parse(request.params).id;
     if (!await dependencies.repository.getProject(projectId)) notFound('项目不存在。');
