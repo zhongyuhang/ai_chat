@@ -5,3 +5,4 @@ export * from './outline.js';
 export * from './generation.js';
 export * from './migration.js';
 export * from './context.js';
+export * from './theatre.js';

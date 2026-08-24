@@ -13,6 +13,8 @@ import { createProposalService } from './canon/proposal-service.js';
 import { createChapterStateService } from './canon/chapter-state-service.js';
 import { createOutlineService } from './outlines/outline-service.js';
 import { registerCanonRoutes } from './canon/canon-routes.js';
+import { createTheatreRepository } from './theatre/theatre-repository.js';
+import { registerTheatreRoutes } from './theatre/theatre-routes.js';
 
 export interface AppOptions {
   logger?: boolean;
@@ -38,6 +40,7 @@ export async function buildApp(options: AppOptions = {}): Promise<FastifyInstanc
   const proposals = createProposalService({ repository, canon });
   const chapterStates = createChapterStateService({ repository });
   const outlines = createOutlineService({ repository });
+  const theatre = createTheatreRepository({ dataRoot });
 
   app.setErrorHandler((error, request, reply) => {
     const validation = error instanceof ZodError;
@@ -61,6 +64,7 @@ export async function buildApp(options: AppOptions = {}): Promise<FastifyInstanc
   await registerProjectRoutes(app, repository);
   await registerGenerationRoutes(app, { repository, runStore, provider, promptRegistry });
   await registerCanonRoutes(app, { canon, proposals, chapterStates, outlines });
+  await registerTheatreRoutes(app, theatre);
   await app.ready();
   return app;
 }
