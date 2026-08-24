@@ -57,6 +57,22 @@ describe('project routes', () => {
     expect(chapter.statusCode).toBe(200);
     expect(chapter.json().content).toContain('雨夜来客');
 
+    const revisions = await app.inject({
+      method: 'GET',
+      url: `/api/projects/${project.id}/chapters/chapter_001/revisions`,
+    });
+    expect(revisions.statusCode).toBe(200);
+    expect(revisions.json().revisions).toEqual([
+      expect.objectContaining({ chapterId: 'chapter_001', reason: 'manual-save' }),
+    ]);
+
+    const restored = await app.inject({
+      method: 'POST',
+      url: `/api/projects/${project.id}/chapters/chapter_001/revisions/${revisions.json().revisions[0].id}/restore`,
+    });
+    expect(restored.statusCode).toBe(200);
+    expect(restored.json().revision.reason).toMatch(/^restore:/);
+
     const listed = await app.inject({ method: 'GET', url: '/api/projects' });
     expect(listed.json().projects).toHaveLength(1);
     const fetched = await app.inject({ method: 'GET', url: `/api/projects/${project.id}` });

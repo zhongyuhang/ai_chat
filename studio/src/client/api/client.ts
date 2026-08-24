@@ -9,6 +9,15 @@ export interface Project {
   updatedAt: string;
 }
 
+export interface ChapterRevision {
+  schemaVersion: 1;
+  id: string;
+  chapterId: string;
+  reason: string;
+  characterCount: number;
+  createdAt: string;
+}
+
 interface ApiFailure {
   error?: { code?: string; message?: string; fields?: Record<string, string> };
 }
@@ -67,5 +76,25 @@ export const api = {
   },
   previewWorldBook(projectId: string, text: string) {
     return request<{ hits: Array<{ matchedTerm?: string; reason: string; entry: { id: string; name: string } }> }>(`/api/projects/${projectId}/canon/worldbook/preview`, { method: 'POST', body: JSON.stringify({ text }) });
+  },
+  async getChapter(projectId: string, chapterId: string) {
+    try {
+      return await request<{ content: string }>(`/api/projects/${projectId}/chapters/${chapterId}`);
+    } catch (error) {
+      if (error instanceof ApiError && error.code === 'NOT_FOUND') return { content: '' };
+      throw error;
+    }
+  },
+  saveChapter(projectId: string, chapterId: string, content: string, reason = 'manual-save') {
+    return request<{ ok: true; revision: ChapterRevision }>(`/api/projects/${projectId}/chapters/${chapterId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ content, reason }),
+    });
+  },
+  async listChapterRevisions(projectId: string, chapterId: string) {
+    return (await request<{ revisions: ChapterRevision[] }>(`/api/projects/${projectId}/chapters/${chapterId}/revisions`)).revisions;
+  },
+  restoreChapterRevision(projectId: string, chapterId: string, revisionId: string) {
+    return request<{ ok: true; revision: ChapterRevision }>(`/api/projects/${projectId}/chapters/${chapterId}/revisions/${revisionId}/restore`, { method: 'POST' });
   },
 };

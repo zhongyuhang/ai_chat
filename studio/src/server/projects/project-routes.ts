@@ -7,6 +7,7 @@ import type { ProjectRepository } from './project-repository.js';
 
 const ProjectParams = z.object({ id: EntityIdSchema });
 const ChapterParams = z.object({ id: EntityIdSchema, chapterId: EntityIdSchema });
+const RevisionParams = ChapterParams.extend({ revisionId: EntityIdSchema });
 const CanonParams = z.object({ id: EntityIdSchema, kind: z.enum(['characters', 'relationships', 'worldbook', 'timeline', 'foreshadowing', 'outline']) });
 const ChapterBody = z.object({
   content: z.string().max(20_000_000),
@@ -63,6 +64,23 @@ export async function registerProjectRoutes(app: FastifyInstance, repository: Pr
     if (!await repository.getProject(id)) notFound('项目不存在。');
     const revision = await repository.saveChapterRevision(id, chapterId, body.content, { reason: body.reason });
     return { ok: true, revision };
+  });
+
+  app.get('/api/projects/:id/chapters/:chapterId/revisions', async (request) => {
+    const { id, chapterId } = ChapterParams.parse(request.params);
+    if (!await repository.getProject(id)) notFound('项目不存在。');
+    return { revisions: await repository.listChapterRevisions(id, chapterId) };
+  });
+
+  app.post('/api/projects/:id/chapters/:chapterId/revisions/:revisionId/restore', async (request) => {
+    const { id, chapterId, revisionId } = RevisionParams.parse(request.params);
+    if (!await repository.getProject(id)) notFound('项目不存在。');
+    try {
+      return { ok: true, revision: await repository.restoreChapterRevision(id, chapterId, revisionId) };
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') return notFound('修订版本不存在。');
+      throw error;
+    }
   });
 
   app.post('/api/migrations/legacy/preview', async (request) => previewLegacyMigration(request.body));

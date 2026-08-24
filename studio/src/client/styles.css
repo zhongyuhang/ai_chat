@@ -103,6 +103,38 @@ button:focus-visible { outline: 3px solid #f59e0b; outline-offset: 3px; }
 .canon-grid p { margin: 0; color: var(--muted); line-height: 1.6; }
 .hit-result { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px; border-left: 4px solid var(--accent); background: #fff7e6; }
 .hit-result span { color: var(--muted); font-size: 12px; }
+.studio-workspace { width: min(1540px, 100%); padding: clamp(22px, 3vw, 46px); }
+.studio-heading h2 { margin: 7px 0; font-family: "Songti SC", SimSun, serif; font-size: clamp(34px, 4vw, 54px); }
+.studio-heading p:last-child { margin: 5px 0 0; color: var(--muted); }
+.studio-commandbar { display: flex; align-items: flex-end; gap: 10px; margin: 18px 0 12px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.studio-commandbar label { display: grid; gap: 5px; color: var(--muted); font-size: 11px; font-weight: 700; }
+.studio-commandbar input { width: 150px; min-height: 42px; padding: 0 10px; border: 1px solid #cfc2b3; border-radius: 8px; background: white; }
+.studio-commandbar > span { align-self: center; color: var(--muted); font-size: 12px; }
+.studio-commandbar .save-state { margin-left: auto; }
+.studio-commandbar .save-state.dirty { color: #9a3412; font-weight: 700; }
+.studio-notice { min-height: 22px; margin: 8px 2px; color: #3f6212; font-size: 13px; }
+.studio-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 340px); gap: 14px; }
+.editor-panel, .rail-card { border: 1px solid var(--line); border-radius: 14px; background: var(--surface); box-shadow: 0 12px 36px rgba(93, 69, 43, .05); }
+.editor-panel { min-width: 0; overflow: hidden; }
+.editor-panel > .panel-heading { padding: 16px 20px 10px; }
+.panel-heading h3 { margin: 5px 0 0; font-family: "Songti SC", SimSun, serif; font-size: 22px; }
+.panel-heading small { color: var(--muted); }
+.chapter-editor { border-top: 1px solid var(--line); }
+.chapter-editor .cm-editor { font-size: 16px; }
+.chapter-editor .cm-scroller { font-family: "Songti SC", SimSun, serif; line-height: 1.85; }
+.chapter-editor .cm-content { max-width: 860px; padding: 28px clamp(20px, 5vw, 64px); caret-color: var(--accent-strong); }
+.chapter-editor .cm-gutters { color: #a8a29e; background: #faf7f0; border-right-color: var(--line); }
+.chapter-editor .cm-focused { outline: 3px solid rgba(245, 158, 11, .25); outline-offset: -3px; }
+.studio-rail { display: grid; align-content: start; gap: 14px; }
+.rail-card { padding: 18px; }
+.rail-card h3 { margin: 7px 0; }
+.rail-card > p:not(.section-kicker) { color: var(--muted); line-height: 1.65; }
+.revision-card ol { display: grid; gap: 8px; max-height: 440px; margin: 16px 0 0; padding: 0; overflow: auto; list-style: none; }
+.revision-card li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 9px; background: #fffdf7; }
+.revision-card li div { display: grid; gap: 4px; min-width: 0; }
+.revision-card li strong { overflow: hidden; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+.revision-card li time, .revision-card li small, .empty-note { color: var(--muted); font-size: 11px; }
+.revision-card li .quiet-button { min-height: 36px; padding: 0 10px; }
 
 @media (max-width: 760px) {
   .workspace { grid-template-columns: 1fr; }
@@ -115,6 +147,12 @@ button:focus-visible { outline: 3px solid #f59e0b; outline-offset: 3px; }
   .project-layout { grid-template-columns: 1fr; }
   .project-detail dl { grid-template-columns: 1fr; }
   .workspace-heading, .panel-heading { align-items: stretch; flex-direction: column; }
+  .studio-commandbar { align-items: stretch; flex-wrap: wrap; }
+  .studio-commandbar label { flex: 1 1 160px; }
+  .studio-commandbar input { width: 100%; }
+  .studio-commandbar .save-state { margin-left: 0; }
+  .studio-grid { grid-template-columns: 1fr; }
+  .chapter-editor .cm-content { padding: 20px 16px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
