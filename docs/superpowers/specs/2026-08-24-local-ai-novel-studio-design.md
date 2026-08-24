@@ -415,7 +415,7 @@ All feature and bug-fix work follows test-driven development.
 
 ### 17.4 Scale and Recovery Tests
 
-- A synthetic project with 50–100 chapters and at least 500,000 Chinese characters.
+- A synthetic project with 200–300 chapters and at least 1,000,000 Chinese characters.
 - Many world-book entries and long theatre branches.
 - Browser refresh during generation.
 - Server termination between temporary write and atomic rename.
@@ -458,7 +458,9 @@ Every priority ends in a runnable, testable local application. Later phases must
 - Novel Studio and Character Theatre share confirmed canon while keeping proposals separate.
 - Chapter candidates and roleplay branches can be compared and promoted without overwriting accepted content.
 - Serial and publication quality reports cite passages, identify fatal defects, and preserve waivers.
-- A 50–100 chapter synthetic project remains usable and recoverable.
+- A 200–300 chapter, 1,000,000-character synthetic project remains usable, searchable, consistent, and recoverable.
+- Every accepted chapter produces a durable post-chapter state snapshot covering character state, relationship deltas, timeline events, revealed knowledge, active goals, unresolved hooks, and foreshadowing changes.
+- Cross-volume fact lookup can trace a setting or state to its confirming chapter and revision instead of relying on lossy conversational summaries.
 - All core workflows function at desktop and 390px mobile widths.
 - The full automated test suite, type checking, production build, dependency audit, and security regressions pass with no unexplained warnings.
 

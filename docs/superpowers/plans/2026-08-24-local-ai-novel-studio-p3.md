@@ -398,13 +398,13 @@ git commit -m "feat: complete responsive accessible studio UX"
 - [ ] **Step 1: Write failing scale and crash-recovery tests**
 
 ```ts
-it('loads and analyzes a 100 chapter 500k-character project', async () => {
-  const project = await createLargeProject({ chapters: 100, characters: 40, worldBookEntries: 500, chineseCharacters: 500_000 });
+it('loads and analyzes a 240 chapter million-character project', async () => {
+  const project = await createLargeProject({ chapters: 240, characters: 80, worldBookEntries: 1_000, chineseCharacters: 1_000_000 });
   const started = performance.now();
   const analytics = await analyzeProject(project.id, repository);
-  expect(analytics.chapterCount).toBe(100);
-  expect(analytics.chineseCharacters).toBeGreaterThanOrEqual(500_000);
-  expect(performance.now() - started).toBeLessThan(2_000);
+  expect(analytics.chapterCount).toBe(240);
+  expect(analytics.chineseCharacters).toBeGreaterThanOrEqual(1_000_000);
+  expect(performance.now() - started).toBeLessThan(5_000);
 });
 
 it('keeps the prior valid file when replacement fails', async () => {
@@ -421,7 +421,7 @@ Run: `npm --prefix studio run test:scale`
 
 - [ ] **Step 3: Optimize only measured bottlenecks**
 
-Use paged chapter metadata, lazy accepted-body loading, cached analytics keyed by file revision/checksum, and indexed normalized world-book trigger terms. Do not add a database or semantic vector layer during this phase.
+Use paged chapter metadata, lazy accepted-body loading, cached analytics keyed by file revision/checksum, indexed normalized world-book trigger terms, and per-chapter state snapshots. Each accepted chapter snapshot records character state, relationship deltas, timeline events, revealed knowledge, active goals, unresolved hooks, and foreshadowing changes with source revision IDs. Do not add a database or semantic vector layer during this phase.
 
 - [ ] **Step 4: Implement browser recovery E2E**
 
@@ -467,7 +467,7 @@ git commit -m "test: complete local novel studio release gate"
 - Markdown, TXT, JSON, and DOCX exports use accepted revisions in outline order.
 - Project navigation and settings are fully usable at 390px without overflow.
 - No action is hover-only; critical state changes are announced accessibly.
-- A 100-chapter, 500k-character fixture passes the defined analysis target.
+- A 240-chapter, 1,000,000-character fixture passes the defined analysis target and cross-volume fact lookup returns confirming chapter/revision sources.
 - Interrupted generation, stale edits, failed writes, corrupt metadata, legacy migration, and browser refresh are recoverable.
 - The complete both-mode publication flow passes through a fake DeepSeek provider.
 - Root and studio verification, builds, and production dependency audits pass.

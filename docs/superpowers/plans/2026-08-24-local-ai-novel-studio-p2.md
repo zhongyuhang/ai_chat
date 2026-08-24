@@ -26,6 +26,7 @@
 
 - `studio/src/server/outlines/*`: story bible, volume, chapter, and scene-card repository/services.
 - `studio/src/server/canon/*`: character, relationship, world-book, timeline, foreshadowing, and proposal services.
+- `studio/src/server/canon/chapter-state-service.ts`: revision-linked post-chapter state snapshots and cross-volume fact sources.
 - `studio/src/server/theatre/message-graph.ts`: immutable branch graph operations.
 - `studio/src/server/theatre/theatre-repository.ts`: sessions, state, memory, and proposals.
 - `studio/src/server/generation/task-compiler.ts`: typed tasks for plans, chapters, rewrites, and roleplay.
@@ -43,6 +44,7 @@
 - Create: `studio/src/server/outlines/outline-service.ts`
 - Create: `studio/src/server/canon/canon-service.ts`
 - Create: `studio/src/server/canon/proposal-service.ts`
+- Create: `studio/src/server/canon/chapter-state-service.ts`
 - Create: `studio/src/server/canon/canon-routes.ts`
 - Create: `studio/tests/server/canon-service.test.ts`
 - Modify: `studio/src/server/app.ts`
@@ -51,6 +53,7 @@
 - Produces: `OutlineService` methods `getTree`, `saveStoryBible`, `saveVolume`, `saveChapterOutline`, `saveSceneCard`, and `reorder`.
 - Produces: `CanonService` methods `getBundle`, `saveCharacter`, `saveRelationship`, `saveWorldBookEntry`, `saveTimelineEvent`, and `saveForeshadowing`.
 - Produces: `ProposalService.create`, `list`, `accept`, and `reject`.
+- Produces: `ChapterStateService.capture`, `getAtChapter`, `traceFact`, and `rebuildIndex` using accepted chapter revision IDs.
 
 - [ ] **Step 1: Write failing tests proving proposals cannot mutate canon**
 
@@ -66,6 +69,11 @@ it('keeps AI-extracted canon separate until acceptance', async () => {
 
 it('rejects a timeline event whose dependency occurs later', async () => {
   await expect(canon.saveTimelineEvent(projectId, impossibleEvent)).rejects.toMatchObject({ code: 'TIMELINE_DEPENDENCY_INVALID' });
+});
+
+it('traces a cross-volume character fact to the confirming chapter revision', async () => {
+  await chapterStates.capture(projectId, { chapterId: 'chapter_120', revisionId: 'rev_120a', characters: [{ id: 'lin_mo', facts: { injuredLeg: true } }], relationships: [], timelineEvents: [], revealedKnowledge: [], activeGoals: [], unresolvedHooks: [], foreshadowing: [] });
+  expect(await chapterStates.traceFact(projectId, 'character:lin_mo:injuredLeg')).toEqual({ value: true, chapterId: 'chapter_120', revisionId: 'rev_120a' });
 });
 ```
 
