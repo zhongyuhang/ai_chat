@@ -5,8 +5,8 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "node tests/server-prompt-test.js && node tests/chat-page-smoke.js && node tests/chat-page-long-session.js && node tests/chat-page-many-sessions.js && node tests/chat-page-indexeddb.js",
-    "check": "node --check server.js && node --check tests/server-prompt-test.js && node --check tests/chat-page-smoke.js && node --check tests/chat-page-long-session.js && node --check tests/chat-page-many-sessions.js && node --check tests/chat-page-indexeddb.js"
+    "test": "node tests/server-config-test.js && node tests/server-prompt-test.js && node tests/server-summarize-test.js && node tests/chat-page-smoke.js && node tests/chat-page-context-budget.js && node tests/chat-page-long-session.js && node tests/chat-page-many-sessions.js && node tests/chat-page-indexeddb.js",
+    "check": "node --check server.js && node --check src/legacy/config.js && node --check tests/server-config-test.js && node --check tests/server-prompt-test.js && node --check tests/server-summarize-test.js && node --check tests/chat-page-smoke.js && node --check tests/chat-page-context-budget.js && node --check tests/chat-page-long-session.js && node --check tests/chat-page-many-sessions.js && node --check tests/chat-page-indexeddb.js"
   },
   "keywords": [],
   "author": "",

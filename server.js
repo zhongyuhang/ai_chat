@@ -1,27 +1,18 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const { loadConfig } = require('./src/legacy/config');
 
 const ROOT = __dirname;
-const PORT = Number(process.env.PORT || 3000);
-const DEEPSEEK_URL = process.env.DEEPSEEK_API_URL || 'https://api.deepseek.com/v1/chat/completions';
-const DEFAULT_PROMPT_FILE = process.env.DEFAULT_SYSTEM_PROMPT_FILE || path.join('prompts', 'default-system-prompt.txt');
-
-loadEnv();
-
-function loadEnv() {
-  const file = path.join(ROOT, '.env');
-  if (!fs.existsSync(file)) return;
-  for (const line of fs.readFileSync(file, 'utf8').split(/\r?\n/)) {
-    const match = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)\s*$/);
-    if (!match || process.env[match[1]]) continue;
-    process.env[match[1]] = match[2].replace(/^["']|["']$/g, '');
-  }
-}
+const config = loadConfig({ root: ROOT });
+const PORT = config.port;
+const DEEPSEEK_URL = config.deepseekUrl;
+const DEFAULT_PROMPT_FILE = config.defaultPromptFile;
 
 const server = http.createServer(async (req, res) => {
   try {
     if (req.method === 'POST' && req.url === '/api/chat') return proxyChat(req, res);
+    if (req.method === 'POST' && req.url === '/api/summarize') return proxySummarize(req, res);
     if (req.method === 'GET' && req.url === '/api/status') return sendJson(res, 200, getStatus());
     if (req.method === 'GET') return serveStatic(req, res);
     sendJson(res, 405, { error: { message: 'Method not allowed' } });
@@ -31,7 +22,7 @@ const server = http.createServer(async (req, res) => {
 });
 
 async function proxyChat(req, res) {
-  const apiKey = process.env.DEEPSEEK_API_KEY;
+  const apiKey = config.apiKey;
   if (!apiKey) return sendJson(res, 500, { error: { message: '缺少 DEEPSEEK_API_KEY，请在 .env 中配置。' } });
 
   const body = await readBody(req);
@@ -74,6 +65,74 @@ function injectDefaultPrompt(body) {
     payload.messages = [{ role: 'system', content: prompt }, ...payload.messages];
   }
   return payload;
+}
+
+const SUMMARIZE_INSTRUCTION = `你是小说创作辅助工具中的上下文压缩模块。
+请阅读下面的对话记录，整理成一份简洁、结构化、可继续创作的中文摘要。
+要求：
+1. 用简体中文输出，直接给摘要正文，不要任何开场白或解释。
+2. 按以下五个小节组织（每节用“# 小节名”开头）：
+# 剧情主线
+# 角色与状态
+# 已确定的设定
+# 未解决事项与钩子
+# 最新进展
+3. 保留关键人名、地名、目标、已发生的决定；省略重复和客套话。
+4. 若某小节无内容，写“无”或整节省略。
+5. 总长度控制在 500 字以内。`;
+
+function buildSummarizePayload(messages, existingSummary, model) {
+  const msgs = Array.isArray(messages) ? messages.filter((m) => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string' && m.content.trim()) : [];
+  const text = msgs.map((m) => `${m.role === 'user' ? '用户' : '助手'}：${m.content.trim()}`).join('\n\n');
+  const context = [existingSummary ? `已有摘要：\n${existingSummary}` : '', text].filter(Boolean).join('\n\n');
+  return {
+    model,
+    stream: false,
+    temperature: 0.3,
+    max_tokens: 1000,
+    messages: [
+      { role: 'system', content: SUMMARIZE_INSTRUCTION },
+      { role: 'user', content: `请压缩以下对话记录：\n\n${context.slice(0, 60000)}` },
+    ],
+  };}
+
+async function proxySummarize(req, res) {
+  const apiKey = config.apiKey;
+  if (!apiKey) return sendJson(res, 500, { error: { message: '缺少 DEEPSEEK_API_KEY，请在 .env 中配置。' } });
+
+  const body = await readBody(req);
+  let payload;
+  try {
+    const json = JSON.parse(body);
+    if (!Array.isArray(json.messages) || json.messages.length === 0) {
+      return sendJson(res, 400, { error: { message: '缺少 messages 数组。' } });
+    }
+    payload = buildSummarizePayload(json.messages, json.summary, json.model || 'deepseek-v4-flash');
+  } catch (err) {
+    return sendJson(res, 400, { error: { message: '请求体不合法或缺少 messages。' } });
+  }
+
+  let upstream;
+  try {
+    upstream = await fetch(DEEPSEEK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+      body: JSON.stringify(payload),
+    });
+  } catch (err) {
+    return sendJson(res, 502, { error: { message: `上游请求失败：${err.message}` } });
+  }
+
+  if (!upstream.ok) {
+    return sendJson(res, upstream.status, { error: { message: `DeepSeek 摘要请求失败：HTTP ${upstream.status}` } });
+  }
+
+  const data = await upstream.json().catch(() => null);
+  const summary = data?.choices?.[0]?.message?.content;
+  if (typeof summary !== 'string' || !summary.trim()) {
+    return sendJson(res, 502, { error: { message: 'DeepSeek 未返回可用的摘要内容。' } });
+  }
+  sendJson(res, 200, { summary: summary.trim() });
 }
 
 function readDefaultPrompt() {
@@ -137,7 +196,7 @@ function contentType(file) {
 }
 
 if (require.main === module) {
-  server.listen(PORT, () => console.log(`DeepSeek Chat 已启动：http://localhost:${PORT}`));
+  server.listen(PORT, config.host, () => console.log(`DeepSeek Chat 已启动：http://${config.host}:${PORT}`));
 }
 
-module.exports = { server, injectDefaultPrompt, readDefaultPrompt };
+module.exports = { server, config, injectDefaultPrompt, readDefaultPrompt, buildSummarizePayload };
