@@ -26,7 +26,7 @@ export interface RepositoryOptions {
   idFactory?: (prefix: string) => string;
 }
 
-const CanonKind = /^(characters|relationships|worldbook|timeline|foreshadowing|outline|proposals|chapter-states|fact-index)$/;
+const CanonKind = /^(characters|relationships|worldbook|timeline|foreshadowing|outline|proposals|chapter-states|fact-index|quality-reports)$/;
 
 function defaultIdFactory(prefix: string): string {
   return `${prefix}_${randomUUID().replaceAll('-', '').slice(0, 16)}`;

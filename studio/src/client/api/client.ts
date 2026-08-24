@@ -63,6 +63,31 @@ export interface TheatreSession {
   graph: { rootId: string; activeLeafId: string; nodes: Record<string, TheatreMessageNode>; selectedChildren: Record<string, string> };
   updatedAt: string;
 }
+export interface QualityIssue {
+  id: string;
+  code: string;
+  revisionId: string;
+  category: string;
+  severity: 'info' | 'warning' | 'error' | 'fatal';
+  start: number;
+  end: number;
+  excerpt: string;
+  message: string;
+}
+export interface QualityReport {
+  id: string;
+  chapterId: string;
+  revisionId: string;
+  mode: 'serial' | 'publication';
+  total: number;
+  threshold: number;
+  categoryScores: Record<string, number>;
+  weightedScores: Record<string, number>;
+  issues: QualityIssue[];
+  fatalDefects: Array<{ code: string; message: string }>;
+  waiver?: { author: string; note: string; createdAt: string };
+  createdAt: string;
+}
 
 interface ApiFailure {
   error?: { code?: string; message?: string; fields?: Record<string, string> };
@@ -208,5 +233,14 @@ export const api = {
   },
   convertTheatreBranch(projectId: string, sessionId: string, nodeId: string, title: string) {
     return request<{ sceneCard: { id: string; title: string; beats: string[] } }>(`/api/projects/${projectId}/theatre/${sessionId}/materials`, { method: 'POST', body: JSON.stringify({ nodeId, title, kind: 'branch-to-scene-card' }) });
+  },
+  async listQualityReports(projectId: string) {
+    return (await request<{ reports: QualityReport[] }>(`/api/projects/${projectId}/quality`)).reports;
+  },
+  reviewChapter(projectId: string, chapterId: string, mode: 'serial' | 'publication') {
+    return request<{ report: QualityReport; decision: { allowed: boolean; reason?: string; threshold: number } }>(`/api/projects/${projectId}/chapters/${chapterId}/quality`, { method: 'POST', body: JSON.stringify({ mode }) });
+  },
+  waiveQualityReport(projectId: string, chapterId: string, reportId: string, note: string) {
+    return request<{ report: QualityReport; decision: { allowed: true; waived: true } }>(`/api/projects/${projectId}/chapters/${chapterId}/quality/${reportId}/waive`, { method: 'POST', body: JSON.stringify({ author: 'local-user', note }) });
   },
 };

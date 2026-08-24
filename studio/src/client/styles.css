@@ -201,6 +201,24 @@ button:focus-visible { outline: 3px solid #f59e0b; outline-offset: 3px; }
 .material-preview { margin-top: 12px; padding: 18px; border: 1px solid #a3b18a; border-radius: 12px; background: #f7fee7; }
 .material-preview h3 { margin: 5px 0; }
 .material-preview p:not(.section-kicker) { font-family: "Songti SC", SimSun, serif; line-height: 1.7; }
+.quality-panel { margin: 0 0 14px; padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.quality-report { display: grid; gap: 14px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
+.quality-score { display: flex; justify-content: space-between; gap: 20px; }
+.quality-score h4 { margin: 0 0 7px; font-family: "Songti SC", SimSun, serif; font-size: 22px; }
+.quality-score strong { margin-right: 10px; font-size: 20px; }
+.quality-score span, .quality-score p { color: var(--muted); font-size: 12px; }
+.quality-score p { max-width: 430px; margin: 0; line-height: 1.6; }
+.score-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 7px; }
+.score-grid div { display: grid; gap: 4px; padding: 9px; border: 1px solid var(--line); border-radius: 7px; background: white; }
+.score-grid span { color: var(--muted); font-size: 10px; }
+.issue-list { display: grid; gap: 7px; }
+.issue-list h4 { margin: 0; }
+.issue-list button { display: grid; grid-template-columns: auto 1fr; gap: 4px 8px; padding: 10px; border: 1px solid var(--line); border-radius: 8px; color: var(--ink); background: white; text-align: left; cursor: pointer; }
+.issue-list button small { grid-column: 2; color: var(--muted); }
+.issue-severity { padding: 3px 6px; border-radius: 5px; color: #854d0e; background: #fef3c7; font-size: 10px; }
+.issue-severity.error, .issue-severity.fatal { color: #991b1b; background: #fee2e2; }
+.quality-actions { display: flex; align-items: center; gap: 10px; }
+.waiver-badge { padding: 7px 10px; border-radius: 999px; color: #7c2d12; background: #ffedd5; font-size: 12px; font-weight: 700; }
 .dialog-card fieldset { display: grid; gap: 8px; margin: 0; padding: 12px; border: 1px solid var(--line); border-radius: 8px; }
 .dialog-card .checkbox-label { display: flex; align-items: center; grid-template-columns: auto 1fr; }
 .dialog-card .checkbox-label input { width: 18px; min-height: 18px; }
@@ -227,6 +245,8 @@ button:focus-visible { outline: 3px solid #f59e0b; outline-offset: 3px; }
   .theatre-layout { grid-template-columns: 1fr; }
   .theatre-message { max-width: 94%; }
   .composer-options { grid-template-columns: 1fr; }
+  .quality-score { flex-direction: column; }
+  .score-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
 @media (prefers-reduced-motion: reduce) {

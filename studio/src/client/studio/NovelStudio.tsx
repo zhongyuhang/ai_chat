@@ -8,6 +8,8 @@ import { clearDraft, readDraft, writeDraft } from './draft-journal';
 import { GenerationToolbar } from './GenerationToolbar';
 import { CandidateComparison } from './CandidateComparison';
 import type { ContextPreview, GenerationTaskInput } from '../api/client';
+import type { EditorView as EditorViewType } from '@codemirror/view';
+import { QualityPanel } from '../quality/QualityPanel';
 
 const DEFAULT_CHAPTER = 'chapter_001';
 
@@ -20,6 +22,7 @@ export function NovelStudio({ projectId, onBack }: { projectId: string; onBack: 
   const [contextPreview, setContextPreview] = useState<ContextPreview>();
   const [runId, setRunId] = useState('');
   const hydratedKey = useRef('');
+  const editor = useRef<EditorViewType | undefined>(undefined);
   const chapter = useQuery({ queryKey: ['chapter', projectId, chapterId], queryFn: () => api.getChapter(projectId, chapterId), retry: false });
   const revisions = useQuery({ queryKey: ['chapter-revisions', projectId, chapterId], queryFn: () => api.listChapterRevisions(projectId, chapterId) });
   const run = useQuery({
@@ -143,6 +146,15 @@ export function NovelStudio({ projectId, onBack }: { projectId: string; onBack: 
       onStart={(task) => startGeneration.mutate(task)}
     />
     {(previewGeneration.isError || startGeneration.isError) && <p className="form-error" role="alert">{previewGeneration.error?.message || startGeneration.error?.message}</p>}
+    <QualityPanel projectId={projectId} chapterId={chapterId} onNotice={setNotice} onLocate={(issue, report) => {
+      const currentRevision = revisions.data?.at(-1)?.id;
+      if (!editor.current || currentRevision !== report.revisionId) { setNotice('报告基于旧版本，请重新审校后再定位。'); return; }
+      const length = editor.current.state.doc.length;
+      const anchor = Math.min(issue.start, length);
+      const head = Math.min(issue.end, length);
+      editor.current.dispatch({ selection: { anchor, head }, effects: EditorView.scrollIntoView(anchor, { y: 'center' }) });
+      editor.current.focus();
+    }} />
 
     <div className="studio-grid">
       <section className="editor-panel" aria-label="章节编辑区">
@@ -155,6 +167,7 @@ export function NovelStudio({ projectId, onBack }: { projectId: string; onBack: 
           minHeight="440px"
           extensions={[markdown(), EditorView.contentAttributes.of({ 'aria-label': '章节正文', role: 'textbox' }), EditorView.lineWrapping]}
           basicSetup={{ lineNumbers: true, foldGutter: false, highlightActiveLine: true }}
+          onCreateEditor={(view) => { editor.current = view; }}
           onChange={(value) => { setContent(value); setDirty(true); setNotice(''); }}
         />}
       </section>
