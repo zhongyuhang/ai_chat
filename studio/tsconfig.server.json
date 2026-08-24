@@ -13,5 +13,5 @@
     "noEmit": true,
     "types": ["node", "vitest/globals"]
   },
-  "include": ["src/server", "src/shared", "tests/server", "tests/shared"]
+  "include": ["src/server", "src/shared", "tests/server", "tests/shared", "tests/fixtures"]
 }

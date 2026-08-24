@@ -20,6 +20,9 @@ import { createMaterialConverter } from './material/material-converter.js';
 import fastifyStatic from '@fastify/static';
 import { createQualityService } from './quality/quality-service.js';
 import { registerQualityRoutes } from './quality/quality-routes.js';
+import { registerDashboardRoutes } from './dashboard/dashboard-routes.js';
+import { registerExportRoutes } from './export/export-routes.js';
+import { createAcceptedStateCapture } from './canon/accepted-state-capture.js';
 
 export interface AppOptions {
   logger?: boolean;
@@ -55,7 +58,8 @@ export async function buildApp(options: AppOptions = {}): Promise<FastifyInstanc
   const chapterStates = createChapterStateService({ repository });
   const outlines = createOutlineService({ repository });
   const theatre = createTheatreRepository({ dataRoot });
-  const coordinator = createGenerationCoordinator({ repository, runStore, provider, promptRegistry });
+  const captureAcceptedState = createAcceptedStateCapture({ canon, chapterStates, outlines });
+  const coordinator = createGenerationCoordinator({ repository, runStore, provider, promptRegistry, onChapterAccepted: captureAcceptedState });
   const materials = createMaterialConverter({ theatre, canon });
   const quality = createQualityService({ repository, canon });
 
@@ -78,11 +82,13 @@ export async function buildApp(options: AppOptions = {}): Promise<FastifyInstanc
     });
   });
   app.get('/api/health', async () => ({ ok: true as const, version: 1 as const }));
-  await registerProjectRoutes(app, repository);
+  await registerProjectRoutes(app, repository, { onChapterAccepted: captureAcceptedState });
   await registerGenerationRoutes(app, { repository, runStore, provider, promptRegistry, canon, outlines, theatre, coordinator });
   await registerCanonRoutes(app, { canon, proposals, chapterStates, outlines });
   await registerTheatreRoutes(app, theatre, { coordinator, materials });
   await registerQualityRoutes(app, quality);
+  await registerDashboardRoutes(app, { repository, canon, outlines });
+  await registerExportRoutes(app, repository);
   if (options.serveClient) {
     await app.register(fastifyStatic, {
       root: options.clientRoot ?? resolve(process.cwd(), 'dist/client'),

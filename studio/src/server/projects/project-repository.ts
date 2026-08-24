@@ -114,6 +114,15 @@ export function createProjectRepository(options: RepositoryOptions) {
     return readFile(resolveProjectPath(options.dataRoot, projectId, 'chapters', `${chapterId}.md`), 'utf8');
   }
 
+  async function listChapterIds(projectId: string): Promise<string[]> {
+    const directory = resolveProjectPath(options.dataRoot, projectId, 'chapters');
+    const entries = await readdir(directory, { withFileTypes: true }).catch((error: NodeJS.ErrnoException) => {
+      if (error.code === 'ENOENT') return [];
+      throw error;
+    });
+    return entries.filter((entry) => entry.isFile() && entry.name.endsWith('.md')).map((entry) => entry.name.slice(0, -3)).filter((id) => EntityIdSchema.safeParse(id).success).sort((a, b) => a.localeCompare(b, 'zh-CN', { numeric: true }));
+  }
+
   async function saveChapterRevision(
     projectId: string,
     chapterId: string,
@@ -171,6 +180,7 @@ export function createProjectRepository(options: RepositoryOptions) {
     saveCanon,
     readCanon,
     readChapter,
+    listChapterIds,
     saveChapterRevision,
     listChapterRevisions,
     restoreChapterRevision,

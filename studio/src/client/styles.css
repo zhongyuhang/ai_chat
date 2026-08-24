@@ -71,6 +71,10 @@ button:focus-visible { outline: 3px solid #f59e0b; outline-offset: 3px; }
 .project-detail dt { color: var(--muted); font-size: 12px; }
 .project-detail dd { margin: 7px 0 0; font-weight: 700; }
 .detail-actions, .inline-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.project-dashboard { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin: -14px 0 22px; }
+.project-dashboard div { display: grid; gap: 5px; padding: 11px; border: 1px solid var(--line); border-radius: 9px; background: #fffaf0; }
+.project-dashboard span { color: var(--muted); font-size: 10px; }
+.project-dashboard strong { font-size: 13px; }
 .detail-placeholder, .empty-projects { display: grid; place-content: center; min-height: 330px; color: var(--muted); text-align: center; }
 .migration-card { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-top: 16px; padding: 20px 24px; }
 .migration-card h3 { margin: 5px 0 0; }

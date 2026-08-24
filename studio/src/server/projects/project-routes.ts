@@ -18,7 +18,7 @@ function notFound(message: string) {
   throw Object.assign(new Error(message), { statusCode: 404, code: 'NOT_FOUND', retryable: false });
 }
 
-export async function registerProjectRoutes(app: FastifyInstance, repository: ProjectRepository): Promise<void> {
+export async function registerProjectRoutes(app: FastifyInstance, repository: ProjectRepository, hooks: { onChapterAccepted?: (projectId: string, chapterId: string, revisionId: string) => Promise<unknown> } = {}): Promise<void> {
   app.get('/api/projects', async () => ({ projects: await repository.listProjects() }));
 
   app.post('/api/projects', async (request, reply) => {
@@ -63,6 +63,7 @@ export async function registerProjectRoutes(app: FastifyInstance, repository: Pr
     const body = ChapterBody.parse(request.body);
     if (!await repository.getProject(id)) notFound('项目不存在。');
     const revision = await repository.saveChapterRevision(id, chapterId, body.content, { reason: body.reason });
+    await hooks.onChapterAccepted?.(id, chapterId, revision.id);
     return { ok: true, revision };
   });
 

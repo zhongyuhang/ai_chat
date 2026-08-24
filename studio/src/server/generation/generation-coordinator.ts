@@ -13,6 +13,7 @@ export function createGenerationCoordinator(options: {
   provider: TextProvider;
   promptRegistry: PromptRegistry;
   idFactory?: (prefix: string) => string;
+  onChapterAccepted?: (projectId: string, chapterId: string, revisionId: string) => Promise<unknown>;
 }) {
   const idFactory = options.idFactory ?? ((prefix: string) => `${prefix}_${crypto.randomUUID().replaceAll('-', '').slice(0, 16)}`);
   const pending = new Map<string, Promise<void>>();
@@ -102,7 +103,8 @@ export function createGenerationCoordinator(options: {
     if (run.target.kind !== 'chapter') throw Object.assign(new Error('此候选稿目标不是章节。'), { code: 'CANDIDATE_TARGET_INVALID', statusCode: 422 });
     const candidate = run.candidates.find((item) => item.id === candidateId);
     if (!candidate) throw Object.assign(new Error('候选稿不存在。'), { code: 'CANDIDATE_NOT_FOUND', statusCode: 404 });
-    await options.repository.saveChapterRevision(run.projectId, run.target.id, candidate.content, { reason: `accepted-run:${runId}:${candidateId}` });
+    const revision = await options.repository.saveChapterRevision(run.projectId, run.target.id, candidate.content, { reason: `accepted-run:${runId}:${candidateId}` });
+    await options.onChapterAccepted?.(run.projectId, run.target.id, revision.id);
     await options.runStore.acceptCandidate(runId, candidateId);
     return options.runStore.get(runId);
   }

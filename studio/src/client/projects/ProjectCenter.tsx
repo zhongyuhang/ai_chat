@@ -3,6 +3,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api/client';
 import { CreateProjectDialog, type CreateProjectInput } from './CreateProjectDialog';
 import { LegacyMigrationDialog } from '../migration/LegacyMigrationDialog';
+import { ProjectDashboard } from '../dashboard/ProjectDashboard';
+import { ExportDialog } from '../export/ExportDialog';
 
 const modeLabel = { serial: '连载优先', publication: '出版优先', both: '连载 + 出版' };
 const statusLabel = { draft: '规划中', active: '创作中', archived: '已归档', completed: '已完成' };
@@ -12,6 +14,7 @@ export function ProjectCenter({ onOpenCanon, onOpenStudio }: { onOpenCanon: (pro
   const projects = useQuery({ queryKey: ['projects'], queryFn: api.listProjects });
   const [selectedId, setSelectedId] = useState<string>();
   const [creating, setCreating] = useState(false);
+  const [exportProjectId, setExportProjectId] = useState<string>();
   useEffect(() => {
     if (!selectedId && projects.data?.length) setSelectedId(projects.data[0].id);
   }, [projects.data, selectedId]);
@@ -67,9 +70,11 @@ export function ProjectCenter({ onOpenCanon, onOpenStudio }: { onOpenCanon: (pro
               <div><dt>模式</dt><dd>{modeLabel[selected.writingMode]}</dd></div>
               <div><dt>内容分级</dt><dd>{selected.contentRating}</dd></div>
             </dl>
+            <ProjectDashboard projectId={selected.id} />
             <div className="detail-actions">
               <button className="primary-action" type="button" onClick={() => onOpenStudio(selected.id)}>进入小说工坊</button>
               <button className="quiet-button" type="button" onClick={() => onOpenCanon(selected.id)}>设定库</button>
+              <button className="quiet-button" type="button" onClick={() => setExportProjectId(selected.id)}>导出作品</button>
               {selected.status !== 'archived' && <button className="quiet-button danger-button" type="button" onClick={() => window.confirm('归档后项目仍会保留，可在后续版本恢复。确认归档吗？') && archive.mutate(selected.id)} disabled={archive.isPending}>归档项目</button>}
             </div>
           </> : <div className="detail-placeholder">选择一个项目查看详情。</div>}
@@ -78,6 +83,7 @@ export function ProjectCenter({ onOpenCanon, onOpenStudio }: { onOpenCanon: (pro
 
       <LegacyMigrationDialog onImported={() => queryClient.invalidateQueries({ queryKey: ['projects'] })} />
       {creating && <CreateProjectDialog onClose={() => setCreating(false)} onCreate={createProject} pending={create.isPending} />}
+      {exportProjectId && <ExportDialog projectId={exportProjectId} onClose={() => setExportProjectId(undefined)} />}
     </main>
   );
 }

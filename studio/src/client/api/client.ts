@@ -243,4 +243,7 @@ export const api = {
   waiveQualityReport(projectId: string, chapterId: string, reportId: string, note: string) {
     return request<{ report: QualityReport; decision: { allowed: true; waived: true } }>(`/api/projects/${projectId}/chapters/${chapterId}/quality/${reportId}/waive`, { method: 'POST', body: JSON.stringify({ author: 'local-user', note }) });
   },
+  getProjectDashboard(projectId: string) {
+    return request<{ volumeCount: number; plannedChapterCount: number; acceptedChapterCount: number; missingChapterCount: number; acceptedCharacters: number; characterCount: number; relationshipCount: number; worldBookCount: number; timelineEventCount: number; unresolvedForeshadowing: number; updatedAt: string }>(`/api/projects/${projectId}/dashboard`);
+  },
 };
