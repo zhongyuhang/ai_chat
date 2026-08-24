@@ -2,17 +2,20 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { EntityIdSchema } from '../../shared/contracts/common.js';
 import type { TheatreRepository } from './theatre-repository.js';
+import type { GenerationCoordinator } from '../generation/generation-coordinator.js';
+import type { MaterialConverter } from '../material/material-converter.js';
 
 const ProjectParams = z.object({ id: EntityIdSchema });
 const SessionParams = z.object({ id: EntityIdSchema, sessionId: EntityIdSchema });
 const NodeParams = z.object({ id: EntityIdSchema, sessionId: EntityIdSchema, nodeId: EntityIdSchema });
+const CandidateParams = z.object({ id: EntityIdSchema, sessionId: EntityIdSchema, runId: EntityIdSchema, candidateId: EntityIdSchema });
 const MessageInput = z.object({ role: z.enum(['user', 'assistant', 'system']), content: z.string().max(20_000_000), runId: EntityIdSchema.optional() });
 
 function missing(): never {
   throw Object.assign(new Error('剧场会话不存在。'), { code: 'THEATRE_SESSION_NOT_FOUND', statusCode: 404, retryable: false });
 }
 
-export async function registerTheatreRoutes(app: FastifyInstance, theatre: TheatreRepository) {
+export async function registerTheatreRoutes(app: FastifyInstance, theatre: TheatreRepository, services?: { coordinator: GenerationCoordinator; materials: MaterialConverter }) {
   app.get('/api/projects/:id/theatre', async (request) => ({ sessions: await theatre.list(ProjectParams.parse(request.params).id) }));
   app.post('/api/projects/:id/theatre', async (request, reply) => {
     const projectId = ProjectParams.parse(request.params).id;
@@ -55,4 +58,22 @@ export async function registerTheatreRoutes(app: FastifyInstance, theatre: Theat
     const { memory } = z.object({ memory: z.string().trim().min(1).max(5000) }).parse(request.body);
     return theatre.pinMemory(id, sessionId, memory);
   });
+  if (services) {
+    app.post('/api/projects/:id/theatre/:sessionId/runs/:runId/candidates/:candidateId/accept', async (request) => {
+      const { id, sessionId, runId, candidateId } = CandidateParams.parse(request.params);
+      const { parentId } = z.object({ parentId: EntityIdSchema }).parse(request.body);
+      const { run, candidate } = await services.coordinator.getCompletedCandidate(runId, candidateId);
+      if (run.projectId !== id || run.target.kind !== 'theatre-session' || run.target.id !== sessionId) {
+        throw Object.assign(new Error('候选稿不属于当前剧场会话。'), { code: 'CANDIDATE_TARGET_INVALID', statusCode: 422 });
+      }
+      const session = await theatre.append(id, sessionId, parentId, { role: 'assistant', content: candidate.content, runId });
+      await services.coordinator.markCandidateAccepted(runId, candidateId);
+      return session;
+    });
+    app.post('/api/projects/:id/theatre/:sessionId/materials', async (request) => {
+      const { id, sessionId } = SessionParams.parse(request.params);
+      const body = z.object({ nodeId: EntityIdSchema, kind: z.literal('branch-to-scene-card'), title: z.string().trim().min(1).max(300) }).parse(request.body);
+      return services.materials.convert({ projectId: id, sessionId, ...body });
+    });
+  }
 }

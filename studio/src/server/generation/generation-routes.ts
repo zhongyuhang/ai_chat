@@ -11,6 +11,8 @@ import type { OutlineService } from '../outlines/outline-service.js';
 import { assembleProjectContext } from '../context/project-context-service.js';
 import { createGenerationCoordinator } from './generation-coordinator.js';
 import { compileWritingTask } from './task-compiler.js';
+import type { TheatreRepository } from '../theatre/theatre-repository.js';
+import type { GenerationCoordinator } from './generation-coordinator.js';
 
 const CreateRunBody = z.object({
   task: z.enum(['story-plan', 'volume-plan', 'chapter-plan', 'scene-plan', 'chapter-draft', 'continue', 'rewrite-selection', 'expand-selection', 'condense-selection', 'polish-selection', 'review', 'theatre-reply']),
@@ -48,8 +50,10 @@ export async function registerGenerationRoutes(app: FastifyInstance, dependencie
   promptRegistry: PromptRegistry;
   canon: CanonService;
   outlines: OutlineService;
+  theatre?: TheatreRepository;
+  coordinator?: GenerationCoordinator;
 }): Promise<void> {
-  const coordinator = createGenerationCoordinator(dependencies);
+  const coordinator = dependencies.coordinator ?? createGenerationCoordinator(dependencies);
 
   async function prepare(projectId: string, body: unknown) {
     if (!await dependencies.repository.getProject(projectId)) notFound('项目不存在。');
@@ -59,6 +63,7 @@ export async function registerGenerationRoutes(app: FastifyInstance, dependencie
       repository: dependencies.repository,
       canon: dependencies.canon,
       outlines: dependencies.outlines,
+      theatre: dependencies.theatre,
       task,
       contextWindow: parsed.contextWindow,
     });

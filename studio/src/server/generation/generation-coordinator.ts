@@ -107,7 +107,20 @@ export function createGenerationCoordinator(options: {
     return options.runStore.get(runId);
   }
 
-  return { start, wait, getRun, cancel, resume, acceptCandidate };
+  async function getCompletedCandidate(runId: string, candidateId: string) {
+    const run = await getRun(runId);
+    if (!run || run.status !== 'completed') throw Object.assign(new Error('生成任务尚未完成。'), { code: 'RUN_NOT_COMPLETED', statusCode: 409 });
+    const candidate = run.candidates.find((item) => item.id === candidateId);
+    if (!candidate) throw Object.assign(new Error('候选稿不存在。'), { code: 'CANDIDATE_NOT_FOUND', statusCode: 404 });
+    return { run, candidate };
+  }
+
+  async function markCandidateAccepted(runId: string, candidateId: string) {
+    await getCompletedCandidate(runId, candidateId);
+    return options.runStore.acceptCandidate(runId, candidateId);
+  }
+
+  return { start, wait, getRun, cancel, resume, acceptCandidate, getCompletedCandidate, markCandidateAccepted };
 }
 
 export type GenerationCoordinator = ReturnType<typeof createGenerationCoordinator>;

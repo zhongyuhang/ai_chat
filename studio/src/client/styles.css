@@ -160,6 +160,44 @@ button:focus-visible { outline: 3px solid #f59e0b; outline-offset: 3px; }
 .candidate-tabs button[aria-selected="true"] { color: white; background: var(--accent-strong); border-color: var(--accent-strong); }
 .candidate-prose { padding: 12px; border: 1px solid var(--line); border-radius: 0 8px 8px; background: white; }
 .candidate-prose pre { max-height: 400px; overflow: auto; font: 14px/1.75 "Songti SC", SimSun, serif; white-space: pre-wrap; word-break: break-word; }
+.theatre-workspace { width: min(1420px, 100%); padding: clamp(22px, 3vw, 46px); }
+.theatre-heading h2 { margin: 7px 0; font-family: "Songti SC", SimSun, serif; font-size: clamp(34px, 4vw, 54px); }
+.theatre-heading p:last-child { color: var(--muted); }
+.theatre-session-tabs { display: flex; gap: 8px; margin: 18px 0 12px; overflow-x: auto; }
+.theatre-session-tabs button { min-height: 42px; padding: 0 14px; border: 1px solid var(--line); border-radius: 9px; background: #fffdf7; cursor: pointer; }
+.theatre-session-tabs button[aria-selected="true"] { color: white; background: var(--accent-strong); border-color: var(--accent-strong); }
+.theatre-empty { display: grid; place-items: center; min-height: 420px; padding: 40px; border: 1px dashed #c9b9a6; border-radius: 16px; color: var(--muted); text-align: center; background: var(--surface); }
+.theatre-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(260px, 320px); gap: 14px; }
+.theatre-stage { min-width: 0; padding: clamp(16px, 3vw, 30px); border: 1px solid var(--line); border-radius: 16px; background: var(--surface); box-shadow: 0 12px 36px rgba(93, 69, 43, .06); }
+.theatre-scene-intro { padding: 12px 18px; border-left: 3px solid var(--accent); color: var(--muted); background: #fff7e6; font-family: "Songti SC", SimSun, serif; font-style: italic; }
+.message-list { display: grid; gap: 14px; margin: 22px 0; }
+.theatre-message { max-width: 82%; padding: 12px 16px; border: 1px solid var(--line); border-radius: 14px; background: white; }
+.theatre-message.user { justify-self: end; background: #fff7e6; }
+.theatre-message > span { color: var(--accent-strong); font-size: 11px; font-weight: 700; }
+.theatre-message > p { margin: 6px 0; font: 16px/1.75 "Songti SC", SimSun, serif; white-space: pre-wrap; }
+.message-action { padding: 0; border: 0; color: var(--accent-strong); background: transparent; font-size: 12px; cursor: pointer; }
+.branch-navigator { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--line); color: var(--muted); font-size: 11px; }
+.branch-navigator button { min-height: 30px; padding: 0 8px; border: 1px solid var(--line); border-radius: 6px; background: white; cursor: pointer; }
+.branch-navigator button.selected { color: white; background: var(--accent-strong); }
+.theatre-composer { display: grid; gap: 10px; margin-top: 14px; padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: #fffdf7; }
+.theatre-composer label, .theatre-inspector label { display: grid; gap: 6px; color: #44403c; font-size: 12px; font-weight: 700; }
+.theatre-composer textarea { min-height: 100px; resize: vertical; }
+.theatre-composer textarea, .theatre-composer input, .theatre-composer select, .theatre-inspector input { padding: 10px; border: 1px solid #cfc2b3; border-radius: 8px; background: white; }
+.composer-options { display: grid; grid-template-columns: 1fr 150px; gap: 10px; }
+.theatre-inspector { display: grid; align-content: start; gap: 14px; }
+.theatre-inspector dl { display: grid; gap: 8px; }
+.theatre-inspector dt { color: var(--muted); font-size: 11px; }
+.theatre-inspector dd { margin: 3px 0 0; line-height: 1.5; }
+.theatre-inspector ul { padding-left: 20px; color: var(--muted); font-size: 13px; line-height: 1.6; }
+.theatre-inspector .quiet-button { margin-top: 8px; }
+.material-actions { margin-top: 12px; }
+.material-preview { margin-top: 12px; padding: 18px; border: 1px solid #a3b18a; border-radius: 12px; background: #f7fee7; }
+.material-preview h3 { margin: 5px 0; }
+.material-preview p:not(.section-kicker) { font-family: "Songti SC", SimSun, serif; line-height: 1.7; }
+.dialog-card fieldset { display: grid; gap: 8px; margin: 0; padding: 12px; border: 1px solid var(--line); border-radius: 8px; }
+.dialog-card .checkbox-label { display: flex; align-items: center; grid-template-columns: auto 1fr; }
+.dialog-card .checkbox-label input { width: 18px; min-height: 18px; }
+.dialog-card textarea { min-height: 80px; padding: 10px; border: 1px solid #cfc2b3; border-radius: 9px; resize: vertical; }
 
 @media (max-width: 760px) {
   .workspace { grid-template-columns: 1fr; }
@@ -179,6 +217,9 @@ button:focus-visible { outline: 3px solid #f59e0b; outline-offset: 3px; }
   .studio-grid { grid-template-columns: 1fr; }
   .generation-config { grid-template-columns: 1fr; }
   .chapter-editor .cm-content { padding: 20px 16px; }
+  .theatre-layout { grid-template-columns: 1fr; }
+  .theatre-message { max-width: 94%; }
+  .composer-options { grid-template-columns: 1fr; }
 }
 
 @media (prefers-reduced-motion: reduce) {

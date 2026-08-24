@@ -4,6 +4,8 @@ import type { CanonService } from '../canon/canon-service.js';
 import type { OutlineService } from '../outlines/outline-service.js';
 import type { ProjectRepository } from '../projects/project-repository.js';
 import { assembleContext } from './context-orchestrator.js';
+import type { TheatreRepository } from '../theatre/theatre-repository.js';
+import { getActivePath } from '../theatre/message-graph.js';
 
 function json(value: unknown): string {
   return JSON.stringify(value, null, 2);
@@ -13,6 +15,7 @@ export async function assembleProjectContext(options: {
   repository: ProjectRepository;
   canon: CanonService;
   outlines: OutlineService;
+  theatre?: TheatreRepository;
   task: WritingTask;
   contextWindow: number;
 }) {
@@ -108,11 +111,25 @@ export async function assembleProjectContext(options: {
     }
   }
 
+  if (task.target.kind === 'theatre-session' && options.theatre) {
+    const session = await options.theatre.get(task.projectId, task.target.id);
+    if (!session) throw Object.assign(new Error('剧场会话不存在。'), { code: 'THEATRE_SESSION_NOT_FOUND', statusCode: 404 });
+    const activePath = getActivePath(session.graph).map((node) => `${node.role}: ${node.content}`).join('\n');
+    components.push({
+      sourceId: 'theatre_active_path',
+      kind: 'theatre-active-branch',
+      content: `用户身份：${session.userPersona}\n旁白模式：${session.narratorMode}\n固定记忆：${session.pinnedMemory.join('；')}\n当前分支：\n${activePath}`,
+      reason: '仅使用当前选中的剧场分支与固定记忆',
+      priority: 970,
+      mandatory: true,
+    });
+  }
+
   return assembleContext({
     components,
     worldBookEntries: bundle.worldBook,
     currentTask: task.instruction,
-    scope: task.target.kind === 'chapter' ? { chapterId: task.target.id } : undefined,
+    scope: task.target.kind === 'chapter' ? { chapterId: task.target.id } : task.target.kind === 'theatre-session' ? { theatreSessionId: task.target.id } : undefined,
     contextWindow: options.contextWindow,
     requestedOutputTokens: task.requestedOutputTokens ?? 8192,
   });

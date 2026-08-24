@@ -18,10 +18,10 @@ export interface ChapterRevision {
   createdAt: string;
 }
 
-export type WritingTaskKind = 'chapter-draft' | 'continue' | 'rewrite-selection' | 'expand-selection' | 'condense-selection' | 'polish-selection';
+export type WritingTaskKind = 'chapter-draft' | 'continue' | 'rewrite-selection' | 'expand-selection' | 'condense-selection' | 'polish-selection' | 'theatre-reply';
 export interface GenerationTaskInput {
   kind: WritingTaskKind;
-  target: { kind: 'chapter'; id: string };
+  target: { kind: 'chapter' | 'theatre-session'; id: string };
   instruction: string;
   candidateCount: number;
   model?: string;
@@ -41,6 +41,27 @@ export interface GenerationRunDetail {
   error?: { code: string; message: string; retryable: boolean };
   contextManifest: ContextPreview['manifest'];
   candidates: Array<{ id: string; content: string; accepted: boolean }>;
+}
+export interface TheatreMessageNode {
+  id: string;
+  parentId: string | null;
+  children: string[];
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  createdAt: string;
+  runId?: string;
+}
+export interface TheatreSession {
+  id: string;
+  projectId: string;
+  title: string;
+  participantIds: string[];
+  userPersona: string;
+  narratorMode: 'none' | 'light' | 'cinematic' | 'omniscient';
+  pinnedMemory: string[];
+  state: Record<string, unknown>;
+  graph: { rootId: string; activeLeafId: string; nodes: Record<string, TheatreMessageNode>; selectedChildren: Record<string, string> };
+  updatedAt: string;
 }
 
 interface ApiFailure {
@@ -136,5 +157,29 @@ export const api = {
   },
   acceptGenerationCandidate(runId: string, candidateId: string) {
     return request(`/api/runs/${runId}/candidates/${candidateId}/accept`, { method: 'POST' });
+  },
+  async listTheatreSessions(projectId: string) {
+    return (await request<{ sessions: TheatreSession[] }>(`/api/projects/${projectId}/theatre`)).sessions;
+  },
+  getTheatreSession(projectId: string, sessionId: string) {
+    return request<TheatreSession>(`/api/projects/${projectId}/theatre/${sessionId}`);
+  },
+  createTheatreSession(projectId: string, input: { title: string; participantIds: string[]; opening: { role: 'system'; content: string }; userPersona: string; narratorMode: TheatreSession['narratorMode'] }) {
+    return request<TheatreSession>(`/api/projects/${projectId}/theatre`, { method: 'POST', body: JSON.stringify(input) });
+  },
+  appendTheatreMessage(projectId: string, sessionId: string, parentId: string, input: { role: 'user'; content: string }) {
+    return request<TheatreSession>(`/api/projects/${projectId}/theatre/${sessionId}/nodes/${parentId}/append`, { method: 'POST', body: JSON.stringify(input) });
+  },
+  selectTheatreBranch(projectId: string, sessionId: string, parentId: string, childId: string) {
+    return request<TheatreSession>(`/api/projects/${projectId}/theatre/${sessionId}/nodes/${parentId}/select`, { method: 'POST', body: JSON.stringify({ childId }) });
+  },
+  pinTheatreMemory(projectId: string, sessionId: string, memory: string) {
+    return request<TheatreSession>(`/api/projects/${projectId}/theatre/${sessionId}/pinned-memory`, { method: 'POST', body: JSON.stringify({ memory }) });
+  },
+  acceptTheatreCandidate(projectId: string, sessionId: string, runId: string, candidateId: string, parentId: string) {
+    return request<TheatreSession>(`/api/projects/${projectId}/theatre/${sessionId}/runs/${runId}/candidates/${candidateId}/accept`, { method: 'POST', body: JSON.stringify({ parentId }) });
+  },
+  convertTheatreBranch(projectId: string, sessionId: string, nodeId: string, title: string) {
+    return request<{ sceneCard: { id: string; title: string; beats: string[] } }>(`/api/projects/${projectId}/theatre/${sessionId}/materials`, { method: 'POST', body: JSON.stringify({ nodeId, title, kind: 'branch-to-scene-card' }) });
   },
 };

@@ -3,6 +3,7 @@ import { ProjectCenter } from './projects/ProjectCenter';
 import { CanonWorkspace } from './canon/CanonWorkspace';
 
 const NovelStudio = lazy(() => import('./studio/NovelStudio').then((module) => ({ default: module.NovelStudio })));
+const CharacterTheatre = lazy(() => import('./theatre/CharacterTheatre').then((module) => ({ default: module.CharacterTheatre })));
 
 type Workspace = 'projects' | 'canon' | 'studio' | 'theatre';
 
@@ -49,7 +50,7 @@ export function App() {
       {workspace === 'projects' && <ProjectCenter onOpenCanon={(id) => open('canon', id)} onOpenStudio={(id) => open('studio', id)} />}
       {workspace === 'canon' && projectId && <CanonWorkspace projectId={projectId} onBack={() => open('projects')} />}
       {workspace === 'studio' && projectId && <Suspense fallback={<main className="main-content" id="main-content"><p className="loading-state" role="status">正在加载小说编辑器…</p></main>}><NovelStudio projectId={projectId} onBack={() => open('projects')} /></Suspense>}
-      {workspace === 'theatre' && <main className="main-content" id="main-content"><h2>角色剧场</h2><p>分支会话编辑器正在接入。</p></main>}
+      {workspace === 'theatre' && projectId && <Suspense fallback={<main className="main-content" id="main-content"><p className="loading-state" role="status">正在加载角色剧场…</p></main>}><CharacterTheatre projectId={projectId} onBack={() => open('projects')} /></Suspense>}
     </div>
   </div>;
 }

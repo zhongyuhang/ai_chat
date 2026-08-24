@@ -15,6 +15,8 @@ import { createOutlineService } from './outlines/outline-service.js';
 import { registerCanonRoutes } from './canon/canon-routes.js';
 import { createTheatreRepository } from './theatre/theatre-repository.js';
 import { registerTheatreRoutes } from './theatre/theatre-routes.js';
+import { createGenerationCoordinator } from './generation/generation-coordinator.js';
+import { createMaterialConverter } from './material/material-converter.js';
 
 export interface AppOptions {
   logger?: boolean;
@@ -41,6 +43,8 @@ export async function buildApp(options: AppOptions = {}): Promise<FastifyInstanc
   const chapterStates = createChapterStateService({ repository });
   const outlines = createOutlineService({ repository });
   const theatre = createTheatreRepository({ dataRoot });
+  const coordinator = createGenerationCoordinator({ repository, runStore, provider, promptRegistry });
+  const materials = createMaterialConverter({ theatre, canon });
 
   app.setErrorHandler((error, request, reply) => {
     const validation = error instanceof ZodError;
@@ -62,9 +66,9 @@ export async function buildApp(options: AppOptions = {}): Promise<FastifyInstanc
   });
   app.get('/api/health', async () => ({ ok: true as const, version: 1 as const }));
   await registerProjectRoutes(app, repository);
-  await registerGenerationRoutes(app, { repository, runStore, provider, promptRegistry, canon, outlines });
+  await registerGenerationRoutes(app, { repository, runStore, provider, promptRegistry, canon, outlines, theatre, coordinator });
   await registerCanonRoutes(app, { canon, proposals, chapterStates, outlines });
-  await registerTheatreRoutes(app, theatre);
+  await registerTheatreRoutes(app, theatre, { coordinator, materials });
   await app.ready();
   return app;
 }
