@@ -1,5 +1,6 @@
 # 依赖
 node_modules/
+studio/dist/
 
 # 环境变量与密钥（绝不提交）
 .env

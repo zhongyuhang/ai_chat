@@ -5,6 +5,10 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
+    "studio:dev": "npm --prefix studio run dev",
+    "studio:build": "npm --prefix studio run build",
+    "studio:test": "npm --prefix studio test",
+    "studio:check": "npm --prefix studio run check",
     "test:security": "node tests/server-config-test.js && node tests/server-security-test.js && node tests/server-stream-test.js && node tests/chat-page-security.js && node tests/chat-page-data-integrity.js",
     "test": "node tests/package-contract-test.js && npm run test:security && node tests/server-prompt-test.js && node tests/server-summarize-test.js && node tests/chat-page-smoke.js && node tests/chat-page-context-budget.js && node tests/chat-page-long-session.js && node tests/chat-page-many-sessions.js && node tests/chat-page-indexeddb.js",
     "check": "node --check server.js && node --check src/legacy/config.js && node --check src/legacy/security.js && node --check src/legacy/deepseek-client.js && node --check src/legacy/app.js && node --check tests/package-contract-test.js && node --check tests/server-config-test.js && node --check tests/server-security-test.js && node --check tests/server-stream-test.js && node --check tests/helpers/test-server.js && node --check tests/helpers/chat-test-page.js && node --check tests/server-prompt-test.js && node --check tests/server-summarize-test.js && node --check tests/chat-page-security.js && node --check tests/chat-page-smoke.js && node --check tests/chat-page-context-budget.js && node --check tests/chat-page-data-integrity.js && node --check tests/chat-page-long-session.js && node --check tests/chat-page-many-sessions.js && node --check tests/chat-page-indexeddb.js"
