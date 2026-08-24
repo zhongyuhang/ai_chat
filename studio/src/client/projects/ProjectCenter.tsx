@@ -7,7 +7,7 @@ import { LegacyMigrationDialog } from '../migration/LegacyMigrationDialog';
 const modeLabel = { serial: '连载优先', publication: '出版优先', both: '连载 + 出版' };
 const statusLabel = { draft: '规划中', active: '创作中', archived: '已归档', completed: '已完成' };
 
-export function ProjectCenter() {
+export function ProjectCenter({ onOpenCanon, onOpenStudio }: { onOpenCanon: (projectId: string) => void; onOpenStudio: (projectId: string) => void }) {
   const queryClient = useQueryClient();
   const projects = useQuery({ queryKey: ['projects'], queryFn: api.listProjects });
   const [selectedId, setSelectedId] = useState<string>();
@@ -68,7 +68,8 @@ export function ProjectCenter() {
               <div><dt>内容分级</dt><dd>{selected.contentRating}</dd></div>
             </dl>
             <div className="detail-actions">
-              <button className="primary-action" type="button" disabled>进入小说工坊</button>
+              <button className="primary-action" type="button" onClick={() => onOpenStudio(selected.id)}>进入小说工坊</button>
+              <button className="quiet-button" type="button" onClick={() => onOpenCanon(selected.id)}>设定库</button>
               {selected.status !== 'archived' && <button className="quiet-button danger-button" type="button" onClick={() => window.confirm('归档后项目仍会保留，可在后续版本恢复。确认归档吗？') && archive.mutate(selected.id)} disabled={archive.isPending}>归档项目</button>}
             </div>
           </> : <div className="detail-placeholder">选择一个项目查看详情。</div>}

@@ -56,4 +56,16 @@ export const api = {
       body: JSON.stringify({ payload, fingerprint }),
     });
   },
+  getCanon(projectId: string) {
+    return request<{ characters: Array<{ id: string; name: string; goals: string[] }>; worldBook: Array<{ id: string; name: string; content: string }> }>(`/api/projects/${projectId}/canon`);
+  },
+  saveCharacter(projectId: string, id: string, value: unknown) {
+    return request(`/api/projects/${projectId}/canon/characters/${id}`, { method: 'PUT', body: JSON.stringify(value) });
+  },
+  saveWorldBook(projectId: string, id: string, value: unknown) {
+    return request(`/api/projects/${projectId}/canon/worldbook/${id}`, { method: 'PUT', body: JSON.stringify(value) });
+  },
+  previewWorldBook(projectId: string, text: string) {
+    return request<{ hits: Array<{ matchedTerm?: string; reason: string; entry: { id: string; name: string } }> }>(`/api/projects/${projectId}/canon/worldbook/preview`, { method: 'POST', body: JSON.stringify({ text }) });
+  },
 };
