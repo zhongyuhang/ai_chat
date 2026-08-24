@@ -125,6 +125,16 @@ export function createRunStore(options: RunStoreOptions) {
     return updateStatus(runId, 'failed', error);
   }
 
+  async function acceptCandidate(runId: string, candidateId: string): Promise<GenerationRun> {
+    const run = await requireRun(runId);
+    const candidate = run.candidates.find((item) => item.id === candidateId);
+    if (!candidate) throw Object.assign(new Error('候选稿不存在。'), { code: 'CANDIDATE_NOT_FOUND', statusCode: 404 });
+    for (const item of run.candidates) item.accepted = item.id === candidateId;
+    run.updatedAt = clock().toISOString();
+    await write(run);
+    return run;
+  }
+
   async function saveRequest(runId: string, request: unknown): Promise<void> {
     await requireRun(runId);
     await atomicWriteJson(runPath(runId, 'request.json'), request);
@@ -135,7 +145,7 @@ export function createRunStore(options: RunStoreOptions) {
     return JSON.parse(await readFile(runPath(runId, 'request.json'), 'utf8'));
   }
 
-  return { create, get, appendCheckpoint, readCheckpoint, updateStatus, complete, interrupt, fail, saveRequest, readRequest };
+  return { create, get, appendCheckpoint, readCheckpoint, updateStatus, complete, interrupt, fail, acceptCandidate, saveRequest, readRequest };
 }
 
 export type RunStore = ReturnType<typeof createRunStore>;

@@ -17,7 +17,7 @@ export const GenerationRunSchema = z.object({
   schemaVersion: SchemaVersion,
   id: EntityIdSchema,
   projectId: EntityIdSchema,
-  task: z.enum(['outline', 'chapter-draft', 'continue', 'rewrite', 'polish', 'review', 'theatre-reply']),
+  task: z.enum(['story-plan', 'volume-plan', 'chapter-plan', 'scene-plan', 'chapter-draft', 'continue', 'rewrite-selection', 'expand-selection', 'condense-selection', 'polish-selection', 'review', 'theatre-reply']),
   status: GenerationStatusSchema,
   provider: z.string().trim().min(1).max(80),
   model: z.string().trim().min(1).max(120),

@@ -7,7 +7,7 @@ import { PromptRegistry } from '../prompts/prompt-registry.js';
 import type { RunStore } from './run-store.js';
 
 const CreateRunBody = z.object({
-  task: z.enum(['outline', 'chapter-draft', 'continue', 'rewrite', 'polish', 'review', 'theatre-reply']),
+  task: z.enum(['story-plan', 'volume-plan', 'chapter-plan', 'scene-plan', 'chapter-draft', 'continue', 'rewrite-selection', 'expand-selection', 'condense-selection', 'polish-selection', 'review', 'theatre-reply']),
   target: z.object({
     kind: z.enum(['project', 'volume', 'chapter', 'scene', 'selection', 'theatre-session']),
     id: EntityIdSchema,
