@@ -4,6 +4,8 @@ const path = require('path');
 const PUBLIC_FILES = new Map([
   ['/', 'index.html'],
   ['/index.html', 'index.html'],
+  ['/vendor/marked.min.js', 'node_modules/marked/marked.min.js'],
+  ['/vendor/purify.min.js', 'node_modules/dompurify/dist/purify.min.js'],
 ]);
 
 function resolveStaticAsset(urlPath, config) {
@@ -18,7 +20,7 @@ function resolveStaticAsset(urlPath, config) {
 
 function securityHeaders() {
   return {
-    'Content-Security-Policy': "default-src 'self'; connect-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'",
+    'Content-Security-Policy': "default-src 'self'; connect-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'",
     'X-Content-Type-Options': 'nosniff',
     'Referrer-Policy': 'no-referrer',
     'X-Frame-Options': 'DENY',

@@ -1,12 +1,11 @@
 const fs = require('fs');
 const path = require('path');
-const { chromium } = require('playwright');
+const { openChatTestPage } = require('./helpers/chat-test-page');
 
 async function main() {
-  const browser = await chromium.launch({ headless: true });
-  const page = await browser.newPage();
+  const running = await openChatTestPage();
+  const { page } = running;
   const indexPath = path.resolve(__dirname, '..', 'index.html');
-  const fileUrl = 'file:///' + indexPath.replace(/\\/g, '/');
   const html = fs.readFileSync(indexPath, 'utf8');
 
   if (/sk-[A-Za-z0-9]/.test(html)) {
@@ -16,7 +15,6 @@ async function main() {
     throw new Error('Frontend must call the local /api/chat proxy');
   }
 
-  await page.goto(fileUrl);
   await page.evaluate(() => localStorage.clear());
   await page.reload();
 
@@ -67,7 +65,7 @@ async function main() {
     throw new Error('Expected active session id after reload');
   }
 
-  await browser.close();
+  await running.close();
 }
 
 main().catch((err) => {

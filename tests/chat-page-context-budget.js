@@ -1,12 +1,8 @@
-const path = require('path');
-const { chromium } = require('playwright');
+const { openChatTestPage } = require('./helpers/chat-test-page');
 
 async function main() {
-  const browser = await chromium.launch({ headless: true });
-  const page = await browser.newPage();
-  const fileUrl = 'file:///' + path.resolve(__dirname, '..', 'index.html').replace(/\\/g, '/');
-
-  await page.goto(fileUrl);
+  const running = await openChatTestPage();
+  const { page } = running;
   await page.evaluate(() => localStorage.clear());
   await page.reload();
   await page.waitForSelector('[data-testid="model-label"]');
@@ -89,7 +85,7 @@ async function main() {
     throw new Error(`自动压缩应返回 mock 摘要，got ${autoCompacted.res}`);
   }
 
-  await browser.close();
+  await running.close();
   console.log('chat-page-context-budget PASS：token 估算 / 分层构建 / 预算 / 自动压缩全部通过');
 }
 

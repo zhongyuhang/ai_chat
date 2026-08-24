@@ -1,12 +1,8 @@
-const path = require('path');
-const { chromium } = require('playwright');
+const { openChatTestPage } = require('./helpers/chat-test-page');
 
 async function main() {
-  const browser = await chromium.launch({ headless: true });
-  const page = await browser.newPage();
-  const fileUrl = 'file:///' + path.resolve(__dirname, '..', 'index.html').replace(/\\/g, '/');
-
-  await page.goto(fileUrl);
+  const running = await openChatTestPage();
+  const { page } = running;
   await page.evaluate(() => localStorage.clear());
   await page.reload();
   await page.waitForSelector('[data-testid="model-label"]');
@@ -25,7 +21,7 @@ async function main() {
     throw new Error(`Expected 60 sessions, got ${metrics.sessionCount}`);
   }
 
-  await browser.close();
+  await running.close();
 }
 
 main().catch((err) => {
