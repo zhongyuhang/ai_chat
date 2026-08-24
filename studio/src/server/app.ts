@@ -8,6 +8,11 @@ import { registerGenerationRoutes } from './generation/generation-routes.js';
 import { createDeepSeekProvider } from './providers/deepseek-provider.js';
 import type { TextProvider } from './providers/provider.js';
 import { PromptRegistry } from './prompts/prompt-registry.js';
+import { createCanonService } from './canon/canon-service.js';
+import { createProposalService } from './canon/proposal-service.js';
+import { createChapterStateService } from './canon/chapter-state-service.js';
+import { createOutlineService } from './outlines/outline-service.js';
+import { registerCanonRoutes } from './canon/canon-routes.js';
 
 export interface AppOptions {
   logger?: boolean;
@@ -29,6 +34,10 @@ export async function buildApp(options: AppOptions = {}): Promise<FastifyInstanc
     timeoutMs: Number(process.env.UPSTREAM_TIMEOUT_MS || 120_000),
   });
   const promptRegistry = options.promptRegistry ?? new PromptRegistry(resolve(process.cwd(), 'src/server/prompts/modules'));
+  const canon = createCanonService({ repository });
+  const proposals = createProposalService({ repository, canon });
+  const chapterStates = createChapterStateService({ repository });
+  const outlines = createOutlineService({ repository });
 
   app.setErrorHandler((error, request, reply) => {
     const validation = error instanceof ZodError;
@@ -51,6 +60,7 @@ export async function buildApp(options: AppOptions = {}): Promise<FastifyInstanc
   app.get('/api/health', async () => ({ ok: true as const, version: 1 as const }));
   await registerProjectRoutes(app, repository);
   await registerGenerationRoutes(app, { repository, runStore, provider, promptRegistry });
+  await registerCanonRoutes(app, { canon, proposals, chapterStates, outlines });
   await app.ready();
   return app;
 }

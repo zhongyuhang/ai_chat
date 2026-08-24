@@ -26,7 +26,7 @@ export interface RepositoryOptions {
   idFactory?: (prefix: string) => string;
 }
 
-const CanonKind = /^(characters|relationships|worldbook|timeline|foreshadowing|outline)$/;
+const CanonKind = /^(characters|relationships|worldbook|timeline|foreshadowing|outline|proposals|chapter-states|fact-index)$/;
 
 function defaultIdFactory(prefix: string): string {
   return `${prefix}_${randomUUID().replaceAll('-', '').slice(0, 16)}`;
@@ -99,6 +99,16 @@ export function createProjectRepository(options: RepositoryOptions) {
     await atomicWriteJson(resolveProjectPath(options.dataRoot, projectId, 'canon', `${kind}.json`), value);
   }
 
+  async function readCanon(projectId: string, kind: string): Promise<unknown | null> {
+    if (!CanonKind.test(kind)) throw new Error('非法设定类型');
+    try {
+      return await readJson(resolveProjectPath(options.dataRoot, projectId, 'canon', `${kind}.json`));
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null;
+      throw error;
+    }
+  }
+
   async function readChapter(projectId: string, chapterId: string): Promise<string> {
     assertEntityId(chapterId);
     return readFile(resolveProjectPath(options.dataRoot, projectId, 'chapters', `${chapterId}.md`), 'utf8');
@@ -159,6 +169,7 @@ export function createProjectRepository(options: RepositoryOptions) {
     getProject,
     updateProject,
     saveCanon,
+    readCanon,
     readChapter,
     saveChapterRevision,
     listChapterRevisions,
