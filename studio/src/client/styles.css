@@ -96,13 +96,20 @@ button:focus-visible { outline: 3px solid #f59e0b; outline-offset: 3px; }
 .canon-panel { min-height: 480px; padding: 22px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
 .canon-form, .preview-box { display: grid; gap: 14px; margin: 16px 0; padding: 18px; border: 1px solid var(--line); border-radius: 12px; background: #fffdf7; }
 .canon-form label, .preview-box label { display: grid; gap: 7px; font-size: 13px; font-weight: 700; }
-.canon-form input, .canon-form textarea, .preview-box textarea { min-height: 44px; padding: 10px 12px; border: 1px solid #cfc2b3; border-radius: 8px; background: white; }
+.canon-form input, .canon-form textarea, .canon-form select, .preview-box textarea { min-height: 44px; padding: 10px 12px; border: 1px solid #cfc2b3; border-radius: 8px; background: white; }
 .canon-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin-top: 18px; }
 .canon-grid article { padding: 16px; border: 1px solid var(--line); border-radius: 10px; background: #fffdf7; }
 .canon-grid h4 { margin: 0 0 8px; }
 .canon-grid p { margin: 0; color: var(--muted); line-height: 1.6; }
 .hit-result { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px; border-left: 4px solid var(--accent); background: #fff7e6; }
 .hit-result span { color: var(--muted); font-size: 12px; }
+.outline-tree { display: grid; gap: 12px; margin-top: 16px; }
+.outline-tree > article { padding: 18px; border: 1px solid var(--line); border-radius: 12px; background: #fffdf7; }
+.outline-tree h4 { margin: 0 0 5px; font-family: "Songti SC", SimSun, serif; font-size: 20px; }
+.outline-tree > article > p { color: var(--muted); }
+.outline-tree ol { display: grid; gap: 8px; padding: 0; list-style: none; }
+.outline-tree li { display: grid; gap: 4px; padding: 12px; border-left: 3px solid var(--accent); background: #fff7e6; }
+.outline-tree li span, .outline-tree li small, .canon-grid small { color: var(--muted); line-height: 1.5; }
 .studio-workspace { width: min(1540px, 100%); padding: clamp(22px, 3vw, 46px); }
 .studio-heading h2 { margin: 7px 0; font-family: "Songti SC", SimSun, serif; font-size: clamp(34px, 4vw, 54px); }
 .studio-heading p:last-child { margin: 5px 0 0; color: var(--muted); }

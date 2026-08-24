@@ -112,13 +112,40 @@ export const api = {
     });
   },
   getCanon(projectId: string) {
-    return request<{ characters: Array<{ id: string; name: string; goals: string[] }>; worldBook: Array<{ id: string; name: string; content: string }> }>(`/api/projects/${projectId}/canon`);
+    return request<{
+      characters: Array<{ id: string; name: string; goals: string[]; speechPatterns: string[]; currentState: { physical: string; emotional: string; relational: string; knowledge: string } }>;
+      relationships: Array<{ id: string; fromCharacterId: string; toCharacterId: string; publicRelationship: string; privateFeelings: string; conflict: string; trust: number }>;
+      worldBook: Array<{ id: string; name: string; content: string }>;
+      timeline: Array<{ id: string; title: string; inWorldTime: string }>;
+      foreshadowing: Array<{ id: string; setup: string; intendedPayoff: string; status: string }>;
+    }>(`/api/projects/${projectId}/canon`);
   },
   saveCharacter(projectId: string, id: string, value: unknown) {
     return request(`/api/projects/${projectId}/canon/characters/${id}`, { method: 'PUT', body: JSON.stringify(value) });
   },
   saveWorldBook(projectId: string, id: string, value: unknown) {
     return request(`/api/projects/${projectId}/canon/worldbook/${id}`, { method: 'PUT', body: JSON.stringify(value) });
+  },
+  saveRelationship(projectId: string, id: string, value: unknown) {
+    return request(`/api/projects/${projectId}/canon/relationships/${id}`, { method: 'PUT', body: JSON.stringify(value) });
+  },
+  saveTimelineEvent(projectId: string, id: string, value: unknown) {
+    return request(`/api/projects/${projectId}/canon/timeline/${id}`, { method: 'PUT', body: JSON.stringify(value) });
+  },
+  saveForeshadowing(projectId: string, id: string, value: unknown) {
+    return request(`/api/projects/${projectId}/canon/foreshadowing/${id}`, { method: 'PUT', body: JSON.stringify(value) });
+  },
+  getOutline(projectId: string) {
+    return request<{ schemaVersion: 1; premise: string; themes: string[]; coreConflict: string; endingContract: string; setting: string; style: string; updatedAt: string; volumes: Array<{ id: string; title: string; goal: string; chapters: Array<{ id: string; title: string; purpose: string; endingHook: string; scenes: unknown[] }> }> }>(`/api/projects/${projectId}/outline`);
+  },
+  saveStoryBible(projectId: string, value: unknown) {
+    return request(`/api/projects/${projectId}/outline/story-bible`, { method: 'PUT', body: JSON.stringify(value) });
+  },
+  saveVolume(projectId: string, id: string, value: unknown) {
+    return request(`/api/projects/${projectId}/outline/volumes/${id}`, { method: 'PUT', body: JSON.stringify(value) });
+  },
+  saveChapterOutline(projectId: string, volumeId: string, id: string, value: unknown) {
+    return request(`/api/projects/${projectId}/outline/volumes/${volumeId}/chapters/${id}`, { method: 'PUT', body: JSON.stringify(value) });
   },
   previewWorldBook(projectId: string, text: string) {
     return request<{ hits: Array<{ matchedTerm?: string; reason: string; entry: { id: string; name: string } }> }>(`/api/projects/${projectId}/canon/worldbook/preview`, { method: 'POST', body: JSON.stringify({ text }) });
