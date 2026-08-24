@@ -48,3 +48,24 @@ npm audit --omit=dev
 安全门禁覆盖本地文件泄漏、跨站调用、Markdown XSS、DeepSeek 超时与取消，以及超长正文/大量消息的逐字持久化。浏览器回归通过真实 HTTP 服务执行，不使用会掩盖 CSP 和路由问题的 `file://` 页面。
 
 设计与实施计划位于 `docs/superpowers/specs` 和 `docs/superpowers/plans`。
+
+## 模块化 Studio（P1）
+
+新工作台与旧版安全页面并行存在。开发时运行：
+
+```powershell
+npm run studio:dev
+```
+
+打开 `http://127.0.0.1:5173`。Vite 只代理本机 Fastify 服务；本机环境中 `3100` 属于 Windows 排除端口段，因此 Studio API 默认使用 `127.0.0.1:3411`。可通过 `STUDIO_HOST`、`STUDIO_PORT` 和 `STUDIO_DATA_ROOT` 调整本地监听与作品目录。
+
+Studio 门禁：
+
+```powershell
+npm run studio:check
+npm run studio:test
+npm run studio:build
+npm --prefix studio run test:e2e
+```
+
+当前 Studio 已提供磁盘项目中心、原子 Markdown 章节修订、项目快照、旧版迁移预览/应用、严格上下文预算、可解释世界书命中、版本化提示词、DeepSeek 流规范化和可恢复生成任务。小说工坊与角色剧场界面将在 P2 接通。

@@ -32,6 +32,12 @@ export async function registerProjectRoutes(app: FastifyInstance, repository: Pr
     return project ?? notFound('项目不存在。');
   });
 
+  app.patch('/api/projects/:id', async (request) => {
+    const { id } = ProjectParams.parse(request.params);
+    const changes = z.object({ status: z.enum(['draft', 'active', 'archived', 'completed']) }).parse(request.body);
+    return dependenciesSafeUpdate(repository, id, changes);
+  });
+
   app.put('/api/projects/:id/canon/:kind', async (request) => {
     const { id, kind } = CanonParams.parse(request.params);
     const body = z.object({ value: z.unknown() }).parse(request.body);
@@ -65,4 +71,9 @@ export async function registerProjectRoutes(app: FastifyInstance, repository: Pr
     const result = await applyLegacyMigration(input, repository);
     return reply.status(201).send(result);
   });
+}
+
+async function dependenciesSafeUpdate(repository: ProjectRepository, id: string, changes: { status: 'draft' | 'active' | 'archived' | 'completed' }) {
+  if (!await repository.getProject(id)) notFound('项目不存在。');
+  return repository.updateProject(id, changes);
 }

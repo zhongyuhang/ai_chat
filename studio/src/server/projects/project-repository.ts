@@ -81,6 +81,16 @@ export function createProjectRepository(options: RepositoryOptions) {
     }
   }
 
+  async function updateProject(projectId: string, changes: { status?: Project['status'] }): Promise<Project> {
+    const current = await getProject(projectId);
+    if (!current) throw Object.assign(new Error('项目不存在。'), { code: 'NOT_FOUND', statusCode: 404 });
+    const revisionId = idFactory('revision');
+    await atomicWriteJson(resolveProjectPath(options.dataRoot, projectId, 'metadata', '.revisions', `${revisionId}.json`), current);
+    const updated = ProjectSchema.parse({ ...current, ...changes, updatedAt: clock().toISOString() });
+    await atomicWriteJson(resolveProjectPath(options.dataRoot, projectId, 'project.json'), updated);
+    return updated;
+  }
+
   async function saveCanon(projectId: string, kind: string, value: unknown): Promise<void> {
     if (!CanonKind.test(kind)) throw new Error('非法设定类型');
     const revisionId = idFactory('revision');
@@ -147,6 +157,7 @@ export function createProjectRepository(options: RepositoryOptions) {
     createProject,
     listProjects,
     getProject,
+    updateProject,
     saveCanon,
     readChapter,
     saveChapterRevision,

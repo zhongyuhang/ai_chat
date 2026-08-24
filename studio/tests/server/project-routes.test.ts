@@ -61,5 +61,13 @@ describe('project routes', () => {
     expect(listed.json().projects).toHaveLength(1);
     const fetched = await app.inject({ method: 'GET', url: `/api/projects/${project.id}` });
     expect(fetched.json().title).toBe('长夜回声');
+
+    const archived = await app.inject({
+      method: 'PATCH',
+      url: `/api/projects/${project.id}`,
+      payload: { status: 'archived' },
+    });
+    expect(archived.statusCode).toBe(200);
+    expect(archived.json().status).toBe('archived');
   });
 });
